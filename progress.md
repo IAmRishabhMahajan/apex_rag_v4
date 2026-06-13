@@ -25,9 +25,11 @@
 - Implemented US-011 APEX-Eval Framework: `src/apex_rag/apex_eval.py` with `RetrievalMetrics` (Recall@K, Precision@K, MRR, NDCG), `EvidenceMetrics`, `ClaimMetrics`, `RecoveryMetrics`, `ReasoningMetrics`, `FinalMetrics` (faithfulness/groundedness/relevance/quality), `QueryEvalResult`, `AggregateReport`, `build_aggregate_report()`, and `format_report()`. 31 unit tests in `tests/test_us_011_impl.py`. All 251 tests pass, ruff clean.
 - Implemented US-012 Research Foundation Traceability: `src/apex_rag/research_traceability.py` with `PaperReference` (URL + contribution_summary validation), `ComponentMapping` (requires ≥1 paper key), `ResearchRegistry` (add/query/validate, rejects unknown paper references), and `build_default_registry()` mapping all 13 research papers (CRAG, Self-RAG, GraphRAG, FLARE, RAGTruth, LongRAG, RECOMP, DSPy, RAGAS, ARES, BEIR, KILT, RAGBench) to 14 components with 3 deferred ideas tracked. 23 unit tests in `tests/test_us_012_impl.py`. All 274 tests pass, ruff clean.
 
+- Implemented pipeline assembly: `src/apex_rag/pipeline.py` with `run_pipeline()` (9-stage end-to-end: query intelligence → retrieval planning → evidence fusion → scoring/repair → complex reasoning → generation → risk verification → validation → eval) and `run_batch()`. `__init__.py` now re-exports `run_pipeline`, `run_batch`, `PipelineResult` as the public API. 18 integration tests in `tests/test_pipeline_integration.py`. All 292 tests pass, ruff and mypy clean (15 files).
+
 ## Pending Work
 
-- All 12 user stories fully implemented and tested. All 274 tests pass across Slices 1–4.
+- All 12 user stories + pipeline assembly fully implemented and tested. 292 tests pass across Slices 1–4.
 - Implement US-010 Risk Assessment, Critique, and Verification (`risk_verification.py`).
 - Implement US-003 Expert Retrieval Routing (`expert_routing.py`).
 - Implement US-004 Evidence Fusion (`evidence_fusion.py`).
