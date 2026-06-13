@@ -13,12 +13,13 @@
 - Implemented US-002 Adaptive Retrieval Planning: `src/apex_rag/retrieval_planning.py` with `RetrievalPlan`, strategy selection (standard/multi-hop/graph/analytics/freshness), planner rules keyed on intent and query content, and fallback standard plan. 17 unit tests added in `tests/test_us_002_impl.py`. All 59 tests pass, ruff clean.
 - Implemented US-003 Expert Retrieval Routing: `src/apex_rag/expert_routing.py` with `RoutingResult`, `ExpertSelection`, `ExpertUnavailableError`, strategy-to-expert mapping, fallback chains, and deduplication. 15 unit tests added in `tests/test_us_003_impl.py`. All 74 tests pass, ruff clean.
 - Implemented US-004 Evidence Fusion: `src/apex_rag/evidence_fusion.py` with `EvidenceItem`, `EvidenceBundle`, `CitationMetadata`, deduplication by content hash, negation-based conflict detection, and `EvidenceValidationError`. 18 unit tests added in `tests/test_us_004_impl.py`. All 92 tests pass, ruff clean.
+- Implemented US-007 Evidence Scoring and Gap Detection: `src/apex_rag/evidence_scoring.py` with `EvidenceScores`, `GapReport`, `ScoredBundle`, authority/freshness/agreement/completeness/confidence scoring, five gap types, and high-risk threshold. 18 unit tests in `tests/test_us_007_impl.py`. All 150 tests pass, ruff clean.
 - Implemented US-005 Validation Mesh: `src/apex_rag/validation_mesh.py` with `ValidationResult`, `ValidationStatus` (approve/reject/repair/escalate), `Severity`, `PipelineStage`, query/fusion/claim/generation validators, and `assert_passes` guard. 22 unit tests in `tests/test_us_005_impl.py`. All 132 tests pass, ruff clean.
 - Implemented US-009 Grounded Reasoning and Generation: `src/apex_rag/generation.py` with `GeneratedAnswer`, `ApprovedClaim`, `CitationLink`, `GroundingError`, claim-to-evidence matching, unsupported claim blocking, limitation surfacing, and duplicate citation deduplication. 18 unit tests added in `tests/test_us_009_impl.py`. All 110 tests pass, ruff clean, mypy clean (27 files).
 
 ## Pending Work
 
-- Implement US-007 Evidence Scoring and Gap Detection (`evidence_scoring.py`) — next up.
+- Implement US-010 Risk Assessment, Critique, and Verification (`risk_verification.py`) — next up.
 - Implement US-010 Risk Assessment, Critique, and Verification (`risk_verification.py`).
 - Implement US-003 Expert Retrieval Routing (`expert_routing.py`).
 - Implement US-004 Evidence Fusion (`evidence_fusion.py`).
