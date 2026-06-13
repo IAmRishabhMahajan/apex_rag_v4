@@ -7,13 +7,14 @@
 - Added twelve story files covering query intelligence, adaptive planning, expert routing, evidence fusion, validation, complex reasoning, evidence scoring, retrieval repair, grounded generation, high-risk verification, evaluation, and research traceability.
 - Configured Python project metadata, `uv` usage notes, Ruff formatting/linting, mypy type checking, and shared standard-library test helpers.
 - Added the US-001 Query Intelligence documentation test.
+- Added documentation tests for US-002 through US-012.
+- Committed one successful story test per user story after the test suite and quality checks passed.
 
 ## Pending Work
 
 - Choose the first delivery slice to implement.
 - Add architecture documentation for concrete schemas and pipeline contracts as implementation starts.
 - Build tests for each implemented capability.
-- Add remaining user-story documentation tests and commit each after a successful quality run.
 
 ## Decisions Made
 
@@ -21,6 +22,7 @@
 - Stories are grouped by product capability rather than by architecture diagram layer only, because several layers must work together to deliver user value.
 - The suggested delivery order starts with a minimal query-to-answer path before adding repair loops, high-risk safeguards, and evaluation.
 - Story tests validate the Markdown artifacts as executable planning contracts until implementation code exists.
+- US-012 was tightened with additional acceptance and testing criteria because the story contract test exposed missing coverage.
 
 ## Known Issues
 
