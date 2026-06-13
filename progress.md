@@ -11,10 +11,11 @@
 - Committed one successful story test per user story after the test suite and quality checks passed.
 - Implemented US-001 Query Intelligence: `src/apex_rag/query_intelligence.py` with `QueryProfile`, intent detection (6 classes), entity extraction, constraint extraction, risk signal detection, and query expansion. 29 unit tests added in `tests/test_us_001_impl.py`. All 42 tests pass, ruff clean, mypy clean.
 - Implemented US-002 Adaptive Retrieval Planning: `src/apex_rag/retrieval_planning.py` with `RetrievalPlan`, strategy selection (standard/multi-hop/graph/analytics/freshness), planner rules keyed on intent and query content, and fallback standard plan. 17 unit tests added in `tests/test_us_002_impl.py`. All 59 tests pass, ruff clean.
+- Implemented US-003 Expert Retrieval Routing: `src/apex_rag/expert_routing.py` with `RoutingResult`, `ExpertSelection`, `ExpertUnavailableError`, strategy-to-expert mapping, fallback chains, and deduplication. 15 unit tests added in `tests/test_us_003_impl.py`. All 74 tests pass, ruff clean.
 
 ## Pending Work
 
-- Implement US-003 Expert Retrieval Routing (`expert_routing.py`) — next up.
+- Implement US-004 Evidence Fusion (`evidence_fusion.py`) — next up.
 - Implement US-003 Expert Retrieval Routing (`expert_routing.py`).
 - Implement US-004 Evidence Fusion (`evidence_fusion.py`).
 - Implement US-009 Grounded Reasoning and Generation (`generation.py`).
