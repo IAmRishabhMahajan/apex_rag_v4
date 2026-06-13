@@ -6,13 +6,14 @@
 - Added a user story index at `docs/user-stories/README.md`.
 - Added twelve story files covering query intelligence, adaptive planning, expert routing, evidence fusion, validation, complex reasoning, evidence scoring, retrieval repair, grounded generation, high-risk verification, evaluation, and research traceability.
 - Configured Python project metadata, `uv` usage notes, Ruff formatting/linting, mypy type checking, and shared standard-library test helpers.
+- Added the US-001 Query Intelligence documentation test.
 
 ## Pending Work
 
 - Choose the first delivery slice to implement.
 - Add architecture documentation for concrete schemas and pipeline contracts as implementation starts.
 - Build tests for each implemented capability.
-- Add one user-story documentation test per story and commit each after a successful quality run.
+- Add remaining user-story documentation tests and commit each after a successful quality run.
 
 ## Decisions Made
 
