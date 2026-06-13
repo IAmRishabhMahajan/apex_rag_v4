@@ -18,9 +18,11 @@
 - Implemented US-005 Validation Mesh: `src/apex_rag/validation_mesh.py` with `ValidationResult`, `ValidationStatus` (approve/reject/repair/escalate), `Severity`, `PipelineStage`, query/fusion/claim/generation validators, and `assert_passes` guard. 22 unit tests in `tests/test_us_005_impl.py`. All 132 tests pass, ruff clean.
 - Implemented US-009 Grounded Reasoning and Generation: `src/apex_rag/generation.py` with `GeneratedAnswer`, `ApprovedClaim`, `CitationLink`, `GroundingError`, claim-to-evidence matching, unsupported claim blocking, limitation surfacing, and duplicate citation deduplication. 18 unit tests added in `tests/test_us_009_impl.py`. All 110 tests pass, ruff clean, mypy clean (27 files).
 
+- Implemented US-006 Complex Query Reasoning Path: `src/apex_rag/complex_reasoning.py` with `is_complex()` complexity gate (intent + keyword + entity count heuristics), `decompose_query()` (3-claim templates per intent), `build_claim_graph()` (DEPENDENCY/CAUSE/CONTRADICTION edges), `link_evidence_to_claims()` (word-overlap matching), `compress_context()` (prioritised evidence summary with source links), and `run_complex_reasoning()` (bypasses simple queries). 26 unit tests in `tests/test_us_006_impl.py`. All 193 tests pass, ruff clean.
+
 ## Pending Work
 
-- Slice 2 (safety & quality controls) is complete. Next: Slice 3 — US-006 Complex Query Reasoning Path, US-008 Retrieval Repair Loop.
+- Slice 3 partially complete. Remaining: US-008 Retrieval Repair Loop.
 - Implement US-010 Risk Assessment, Critique, and Verification (`risk_verification.py`).
 - Implement US-003 Expert Retrieval Routing (`expert_routing.py`).
 - Implement US-004 Evidence Fusion (`evidence_fusion.py`).
