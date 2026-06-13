@@ -22,9 +22,12 @@
 
 - Implemented US-008 Retrieval Repair Loop: `src/apex_rag/retrieval_repair.py` with `FailureClass` (6 classes: no_evidence/low_relevance/conflicting/outdated/incomplete/wrong_expert), `RecoveryStrategy` (6 strategies), `classify_failure()`, recovery actions (`_expand_query`, `_rewrite_query`, `_arbitrate_conflicts`, `_fetch_fresh_query`, `_decompose_for_coverage`, `_reroute_expert`), and `run_repair_loop()` (bounded loop: default max 3 iterations, configurable confidence threshold). 27 unit tests in `tests/test_us_008_impl.py`. All 220 tests pass, ruff clean.
 
+- Implemented US-011 APEX-Eval Framework: `src/apex_rag/apex_eval.py` with `RetrievalMetrics` (Recall@K, Precision@K, MRR, NDCG), `EvidenceMetrics`, `ClaimMetrics`, `RecoveryMetrics`, `ReasoningMetrics`, `FinalMetrics` (faithfulness/groundedness/relevance/quality), `QueryEvalResult`, `AggregateReport`, `build_aggregate_report()`, and `format_report()`. 31 unit tests in `tests/test_us_011_impl.py`. All 251 tests pass, ruff clean.
+- Implemented US-012 Research Foundation Traceability: `src/apex_rag/research_traceability.py` with `PaperReference` (URL + contribution_summary validation), `ComponentMapping` (requires ≥1 paper key), `ResearchRegistry` (add/query/validate, rejects unknown paper references), and `build_default_registry()` mapping all 13 research papers (CRAG, Self-RAG, GraphRAG, FLARE, RAGTruth, LongRAG, RECOMP, DSPy, RAGAS, ARES, BEIR, KILT, RAGBench) to 14 components with 3 deferred ideas tracked. 23 unit tests in `tests/test_us_012_impl.py`. All 274 tests pass, ruff clean.
+
 ## Pending Work
 
-- Slice 3 complete. Remaining: Slice 4 — US-011 APEX-Eval Framework, US-012 Research Traceability (story contract tests exist; implementation pending).
+- All 12 user stories fully implemented and tested. All 274 tests pass across Slices 1–4.
 - Implement US-010 Risk Assessment, Critique, and Verification (`risk_verification.py`).
 - Implement US-003 Expert Retrieval Routing (`expert_routing.py`).
 - Implement US-004 Evidence Fusion (`evidence_fusion.py`).
