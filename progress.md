@@ -9,12 +9,15 @@
 - Added the US-001 Query Intelligence documentation test.
 - Added documentation tests for US-002 through US-012.
 - Committed one successful story test per user story after the test suite and quality checks passed.
+- Implemented US-001 Query Intelligence: `src/apex_rag/query_intelligence.py` with `QueryProfile`, intent detection (6 classes), entity extraction, constraint extraction, risk signal detection, and query expansion. 29 unit tests added in `tests/test_us_001_impl.py`. All 42 tests pass, ruff clean, mypy clean.
 
 ## Pending Work
 
-- Choose the first delivery slice to implement.
+- Implement US-002 Adaptive Retrieval Planning (`retrieval_planning.py`).
+- Implement US-003 Expert Retrieval Routing (`expert_routing.py`).
+- Implement US-004 Evidence Fusion (`evidence_fusion.py`).
+- Implement US-009 Grounded Reasoning and Generation (`generation.py`).
 - Add architecture documentation for concrete schemas and pipeline contracts as implementation starts.
-- Build tests for each implemented capability.
 
 ## Decisions Made
 
