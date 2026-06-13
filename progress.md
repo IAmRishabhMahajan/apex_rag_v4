@@ -20,9 +20,11 @@
 
 - Implemented US-006 Complex Query Reasoning Path: `src/apex_rag/complex_reasoning.py` with `is_complex()` complexity gate (intent + keyword + entity count heuristics), `decompose_query()` (3-claim templates per intent), `build_claim_graph()` (DEPENDENCY/CAUSE/CONTRADICTION edges), `link_evidence_to_claims()` (word-overlap matching), `compress_context()` (prioritised evidence summary with source links), and `run_complex_reasoning()` (bypasses simple queries). 26 unit tests in `tests/test_us_006_impl.py`. All 193 tests pass, ruff clean.
 
+- Implemented US-008 Retrieval Repair Loop: `src/apex_rag/retrieval_repair.py` with `FailureClass` (6 classes: no_evidence/low_relevance/conflicting/outdated/incomplete/wrong_expert), `RecoveryStrategy` (6 strategies), `classify_failure()`, recovery actions (`_expand_query`, `_rewrite_query`, `_arbitrate_conflicts`, `_fetch_fresh_query`, `_decompose_for_coverage`, `_reroute_expert`), and `run_repair_loop()` (bounded loop: default max 3 iterations, configurable confidence threshold). 27 unit tests in `tests/test_us_008_impl.py`. All 220 tests pass, ruff clean.
+
 ## Pending Work
 
-- Slice 3 partially complete. Remaining: US-008 Retrieval Repair Loop.
+- Slice 3 complete. Remaining: Slice 4 — US-011 APEX-Eval Framework, US-012 Research Traceability (story contract tests exist; implementation pending).
 - Implement US-010 Risk Assessment, Critique, and Verification (`risk_verification.py`).
 - Implement US-003 Expert Retrieval Routing (`expert_routing.py`).
 - Implement US-004 Evidence Fusion (`evidence_fusion.py`).
