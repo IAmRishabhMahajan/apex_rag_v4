@@ -22,11 +22,13 @@ Create documentation and metadata that connect system components to the research
 - Each major architecture component lists relevant research influences.
 - Deferred ideas are tracked explicitly.
 - Documentation avoids claiming support for features that are not implemented.
+- Research claims are clearly separated from implementation decisions.
 
 ## Testing Expectations
 
 - Documentation checks verify required reference fields exist.
 - Link checks verify research URLs are present and well-formed.
+- Tests verify component-to-paper mappings do not reference unknown papers.
 
 ## Documentation Updates
 
@@ -35,4 +37,3 @@ Create documentation and metadata that connect system components to the research
 ## Dependencies
 
 - Can start immediately, but should be updated as implementation stories are completed.
-
