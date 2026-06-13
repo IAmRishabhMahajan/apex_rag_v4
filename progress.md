@@ -13,10 +13,11 @@
 - Implemented US-002 Adaptive Retrieval Planning: `src/apex_rag/retrieval_planning.py` with `RetrievalPlan`, strategy selection (standard/multi-hop/graph/analytics/freshness), planner rules keyed on intent and query content, and fallback standard plan. 17 unit tests added in `tests/test_us_002_impl.py`. All 59 tests pass, ruff clean.
 - Implemented US-003 Expert Retrieval Routing: `src/apex_rag/expert_routing.py` with `RoutingResult`, `ExpertSelection`, `ExpertUnavailableError`, strategy-to-expert mapping, fallback chains, and deduplication. 15 unit tests added in `tests/test_us_003_impl.py`. All 74 tests pass, ruff clean.
 - Implemented US-004 Evidence Fusion: `src/apex_rag/evidence_fusion.py` with `EvidenceItem`, `EvidenceBundle`, `CitationMetadata`, deduplication by content hash, negation-based conflict detection, and `EvidenceValidationError`. 18 unit tests added in `tests/test_us_004_impl.py`. All 92 tests pass, ruff clean.
+- Implemented US-009 Grounded Reasoning and Generation: `src/apex_rag/generation.py` with `GeneratedAnswer`, `ApprovedClaim`, `CitationLink`, `GroundingError`, claim-to-evidence matching, unsupported claim blocking, limitation surfacing, and duplicate citation deduplication. 18 unit tests added in `tests/test_us_009_impl.py`. All 110 tests pass, ruff clean, mypy clean (27 files).
 
 ## Pending Work
 
-- Implement US-009 Grounded Reasoning and Generation (`generation.py`) — next up.
+- Slice 1 (minimal query-to-answer path) is complete. Next: Slice 2 — US-005 Validation Mesh, US-007 Evidence Scoring and Gap Detection, US-010 Risk Assessment and Verification.
 - Implement US-003 Expert Retrieval Routing (`expert_routing.py`).
 - Implement US-004 Evidence Fusion (`evidence_fusion.py`).
 - Implement US-009 Grounded Reasoning and Generation (`generation.py`).
