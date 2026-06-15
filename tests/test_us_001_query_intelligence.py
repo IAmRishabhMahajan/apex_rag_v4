@@ -11,6 +11,7 @@ class TestUS001QueryIntelligence(unittest.TestCase):
     """Keep the query intelligence story specific enough to guide implementation."""
 
     def test_story_contract(self) -> None:
+        """Verify US-001 story file has required sections, terms, and minimum bullet counts."""
         expectation = StoryExpectation(
             story_id="US-001",
             slug="query-intelligence",

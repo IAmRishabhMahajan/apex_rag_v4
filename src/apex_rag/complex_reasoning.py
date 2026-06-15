@@ -10,6 +10,8 @@ from src.apex_rag.query_intelligence import Intent, QueryProfile
 
 
 class ClaimStatus(str, Enum):
+    """Lifecycle state of a claim as evidence is linked to it."""
+
     PENDING = "pending"
     SUPPORTED = "supported"
     UNSUPPORTED = "unsupported"
@@ -17,6 +19,8 @@ class ClaimStatus(str, Enum):
 
 
 class EdgeRelationship(str, Enum):
+    """Semantic relationship between two claims in the claim graph."""
+
     SUPPORT = "support"
     CAUSE = "cause"
     DEPENDENCY = "dependency"
@@ -25,6 +29,8 @@ class EdgeRelationship(str, Enum):
 
 @dataclass
 class Claim:
+    """A single retrievable sub-question decomposed from the original complex query."""
+
     text: str
     status: ClaimStatus = ClaimStatus.PENDING
     dependencies: list[str] = field(default_factory=list)
@@ -32,12 +38,15 @@ class Claim:
     confidence: float = 0.0
 
     def link_evidence(self, source_id: str) -> None:
+        """Append a source ID to this claim's evidence links if not already present."""
         if source_id not in self.evidence_links:
             self.evidence_links.append(source_id)
 
 
 @dataclass(frozen=True)
 class ClaimEdge:
+    """A directed edge between two claims with a typed relationship and rationale."""
+
     from_claim: str
     to_claim: str
     relationship: EdgeRelationship
@@ -46,6 +55,8 @@ class ClaimEdge:
 
 @dataclass
 class ClaimGraph:
+    """Directed graph of claims and typed edges for a complex query."""
+
     claims: list[Claim]
     edges: list[ClaimEdge]
 
@@ -56,6 +67,7 @@ class ClaimGraph:
         relationship: EdgeRelationship,
         rationale: str,
     ) -> None:
+        """Append a new typed edge to the graph."""
         self.edges.append(
             ClaimEdge(
                 from_claim=from_text,
@@ -77,6 +89,8 @@ class ClaimGraph:
 
 @dataclass(frozen=True)
 class CompressedContext:
+    """A prioritised summary of the most claim-relevant evidence with source citations."""
+
     summary: str
     source_links: tuple[str, ...]
     retained_item_count: int
@@ -247,6 +261,8 @@ def compress_context(
 
 @dataclass(frozen=True)
 class ComplexReasoningResult:
+    """Output of run_complex_reasoning(): flags whether the complex path was used."""
+
     used_complex_path: bool
     graph: ClaimGraph | None
     compressed_context: CompressedContext | None

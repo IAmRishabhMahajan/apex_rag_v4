@@ -11,6 +11,7 @@ class TestUS002AdaptiveRetrievalPlanning(unittest.TestCase):
     """Keep retrieval planning tied to adaptive strategy selection."""
 
     def test_story_contract(self) -> None:
+        """Verify US-002 story file has required sections, terms, and minimum bullet counts."""
         expectation = StoryExpectation(
             story_id="US-002",
             slug="adaptive-retrieval-planning",

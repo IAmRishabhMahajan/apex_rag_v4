@@ -8,6 +8,8 @@ from enum import Enum
 
 
 class Intent(str, Enum):
+    """Classifies the user's goal: fact lookup, investigation, comparison, etc."""
+
     FACT_LOOKUP = "fact_lookup"
     INVESTIGATION = "investigation"
     ANALYSIS = "analysis"
@@ -18,6 +20,8 @@ class Intent(str, Enum):
 
 
 class EntityType(str, Enum):
+    """Categories of named entity that can be extracted from a query."""
+
     PERSON = "person"
     COMPANY = "company"
     PRODUCT = "product"
@@ -27,6 +31,8 @@ class EntityType(str, Enum):
 
 
 class ConstraintType(str, Enum):
+    """Categories of scoping constraint that narrow retrieval."""
+
     TIME_RANGE = "time_range"
     JURISDICTION = "jurisdiction"
     REGION = "region"
@@ -36,18 +42,24 @@ class ConstraintType(str, Enum):
 
 @dataclass(frozen=True)
 class Entity:
+    """A single named entity extracted from the raw query."""
+
     text: str
     entity_type: EntityType
 
 
 @dataclass(frozen=True)
 class Constraint:
+    """A single scoping constraint extracted from the raw query."""
+
     text: str
     constraint_type: ConstraintType
 
 
 @dataclass(frozen=True)
 class QueryProfile:
+    """Structured representation of a validated, enriched user query."""
+
     raw_query: str
     intent: Intent
     entities: tuple[Entity, ...]
@@ -58,6 +70,7 @@ class QueryProfile:
 
     @property
     def is_valid(self) -> bool:
+        """True when no validation errors were found during profile construction."""
         return len(self.validation_errors) == 0
 
 
@@ -92,6 +105,7 @@ _FACT_PATTERNS = re.compile(
 
 
 def detect_intent(query: str) -> Intent:
+    """Return the highest-priority Intent that matches the query text."""
     if _COMPARISON_PATTERNS.search(query):
         return Intent.COMPARISON
     if _FORECASTING_PATTERNS.search(query):
@@ -153,6 +167,7 @@ _TECH_KEYWORDS = frozenset(
 
 
 def extract_entities(query: str) -> tuple[Entity, ...]:
+    """Extract date, technology, and capitalized-word entities from the query."""
     entities: list[Entity] = []
 
     for match in _DATE_PATTERN.finditer(query):
@@ -220,6 +235,7 @@ _CATEGORY_PATTERN = re.compile(
 
 
 def extract_constraints(query: str) -> tuple[Constraint, ...]:
+    """Extract scoping constraints (time range, jurisdiction, region, etc.) from the query."""
     constraints: list[Constraint] = []
 
     for match in _TIME_RANGE_PATTERN.finditer(query):
@@ -273,6 +289,7 @@ _RISK_PATTERNS = {
 
 
 def detect_risk_signals(query: str) -> tuple[str, ...]:
+    """Return the labels of any high-risk topic patterns found in the query."""
     return tuple(label for label, pattern in _RISK_PATTERNS.items() if pattern.search(query))
 
 
@@ -292,6 +309,7 @@ _EXPANSION_SYNONYMS: dict[str, list[str]] = {
 
 
 def generate_query_expansions(query: str, intent: Intent) -> tuple[str, ...]:
+    """Produce synonym-rewritten variants of the query to widen retrieval coverage."""
     expansions: list[str] = []
     query_lower = query.lower()
 
@@ -322,6 +340,7 @@ _MAX_QUERY_LENGTH = 2000
 
 
 def validate_query(query: str, entities: tuple[Entity, ...], intent: Intent) -> tuple[str, ...]:
+    """Return validation error strings; empty tuple means the query is acceptable."""
     errors: list[str] = []
     stripped = query.strip()
 

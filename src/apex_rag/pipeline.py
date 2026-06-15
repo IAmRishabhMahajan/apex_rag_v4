@@ -34,6 +34,14 @@ from src.apex_rag.validation_mesh import (
 
 @dataclass(frozen=True)
 class PipelineResult:
+    """Aggregated output of a single run_pipeline() call.
+
+    Carries every intermediate stage result — profile, plan, bundle, scored
+    evidence, optional repair, reasoning, answer, verified answer, all four
+    validation results, and the APEX-Eval metrics — so callers can inspect
+    any pipeline step.
+    """
+
     query_profile: QueryProfile
     retrieval_plan: RetrievalPlan
     bundle: EvidenceBundle

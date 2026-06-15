@@ -11,6 +11,7 @@ class TestUS008RetrievalRepairLoop(unittest.TestCase):
     """Keep retrieval repair bounded and tied to classified failures."""
 
     def test_story_contract(self) -> None:
+        """Verify US-008 story file has required sections, terms, and minimum bullet counts."""
         expectation = StoryExpectation(
             story_id="US-008",
             slug="retrieval-repair-loop",

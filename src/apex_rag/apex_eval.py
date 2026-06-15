@@ -12,6 +12,8 @@ from src.apex_rag.retrieval_repair import RepairResult
 
 
 class MetricCategory(str, Enum):
+    """High-level grouping for the different metric families."""
+
     RETRIEVAL = "retrieval"
     EVIDENCE = "evidence"
     CLAIM = "claim"
@@ -22,6 +24,8 @@ class MetricCategory(str, Enum):
 
 @dataclass(frozen=True)
 class RetrievalMetrics:
+    """Standard IR metrics measured at rank k: Recall, Precision, MRR, NDCG."""
+
     recall_at_k: float
     precision_at_k: float
     mrr: float
@@ -29,6 +33,7 @@ class RetrievalMetrics:
     k: int
 
     def __post_init__(self) -> None:
+        """Validate that all metric values are in [0, 1]."""
         for attr in ("recall_at_k", "precision_at_k", "mrr", "ndcg"):
             val = getattr(self, attr)
             if not (0.0 <= val <= 1.0):
@@ -37,11 +42,14 @@ class RetrievalMetrics:
 
 @dataclass(frozen=True)
 class EvidenceMetrics:
+    """Coverage, precision, and recall of retrieved evidence against a ground-truth set."""
+
     coverage: float
     precision: float
     recall: float
 
     def __post_init__(self) -> None:
+        """Validate that all metric values are in [0, 1]."""
         for attr in ("coverage", "precision", "recall"):
             val = getattr(self, attr)
             if not (0.0 <= val <= 1.0):
@@ -50,23 +58,29 @@ class EvidenceMetrics:
 
 @dataclass(frozen=True)
 class ClaimMetrics:
+    """Support and unsupported rates across all approved claims."""
+
     support_rate: float
     unsupported_rate: float
     total_claims: int
 
     def __post_init__(self) -> None:
+        """Validate that support_rate + unsupported_rate sums to 1.0."""
         if abs(self.support_rate + self.unsupported_rate - 1.0) > 1e-6:
             raise ValueError("support_rate + unsupported_rate must equal 1.0")
 
 
 @dataclass(frozen=True)
 class RecoveryMetrics:
+    """Metrics describing how well the repair loop diagnosed and fixed retrieval failures."""
+
     success_rate: float
     failure_detection_accuracy: float
     total_repair_attempts: int
     successful_repairs: int
 
     def __post_init__(self) -> None:
+        """Validate that rate metrics are in [0, 1]."""
         for attr in ("success_rate", "failure_detection_accuracy"):
             val = getattr(self, attr)
             if not (0.0 <= val <= 1.0):
@@ -75,10 +89,13 @@ class RecoveryMetrics:
 
 @dataclass(frozen=True)
 class ReasoningMetrics:
+    """Logical consistency and claim completeness of the reasoning path."""
+
     logical_consistency: float
     claim_completeness: float
 
     def __post_init__(self) -> None:
+        """Validate that both metrics are in [0, 1]."""
         for attr in ("logical_consistency", "claim_completeness"):
             val = getattr(self, attr)
             if not (0.0 <= val <= 1.0):
@@ -87,12 +104,15 @@ class ReasoningMetrics:
 
 @dataclass(frozen=True)
 class FinalMetrics:
+    """End-to-end answer quality: faithfulness, groundedness, relevance, and composite quality."""
+
     faithfulness: float
     groundedness: float
     relevance: float
     answer_quality: float
 
     def __post_init__(self) -> None:
+        """Validate that all final metrics are in [0, 1]."""
         for attr in ("faithfulness", "groundedness", "relevance", "answer_quality"):
             val = getattr(self, attr)
             if not (0.0 <= val <= 1.0):
@@ -101,6 +121,8 @@ class FinalMetrics:
 
 @dataclass
 class QueryEvalResult:
+    """All metric families for a single evaluated query."""
+
     query_id: str
     query_text: str
     retrieval: RetrievalMetrics
@@ -114,6 +136,8 @@ class QueryEvalResult:
 
 @dataclass(frozen=True)
 class AggregateReport:
+    """Averaged metrics across all evaluated queries plus per-query breakdown."""
+
     total_queries: int
     avg_recall_at_k: float
     avg_precision_at_k: float
@@ -175,6 +199,7 @@ def compute_retrieval_metrics(
     retrieved_ids: list[str],
     k: int = 5,
 ) -> RetrievalMetrics:
+    """Bundle Recall@K, Precision@K, MRR, and NDCG into a RetrievalMetrics object."""
     return RetrievalMetrics(
         recall_at_k=compute_recall_at_k(relevant_ids, retrieved_ids, k),
         precision_at_k=compute_precision_at_k(relevant_ids, retrieved_ids, k),
@@ -188,6 +213,7 @@ def compute_evidence_metrics(
     bundle: EvidenceBundle,
     relevant_source_ids: set[str],
 ) -> EvidenceMetrics:
+    """Compute coverage, precision, and recall of the bundle against ground-truth source IDs."""
     retrieved_ids = {item.citation.source_id for item in bundle.items}
     if not retrieved_ids:
         return EvidenceMetrics(coverage=0.0, precision=0.0, recall=0.0)
@@ -204,6 +230,7 @@ def compute_evidence_metrics(
 
 
 def compute_claim_metrics(answer: GeneratedAnswer) -> ClaimMetrics:
+    """Compute support and unsupported rates from a GeneratedAnswer."""
     total = len(answer.approved_claims)
     if total == 0:
         return ClaimMetrics(support_rate=1.0, unsupported_rate=0.0, total_claims=0)
@@ -217,6 +244,7 @@ def compute_claim_metrics(answer: GeneratedAnswer) -> ClaimMetrics:
 
 
 def compute_recovery_metrics(repair_result: RepairResult | None) -> RecoveryMetrics | None:
+    """Compute recovery metrics from a RepairResult, or return None if no repair was run."""
     if repair_result is None:
         return None
     total = len(repair_result.attempts)
@@ -289,6 +317,7 @@ def build_aggregate_report(results: list[QueryEvalResult]) -> AggregateReport:
         )
 
     def _avg(values: list[float]) -> float:
+        """Compute the arithmetic mean of a list, returning 0.0 for empty lists."""
         return sum(values) / len(values) if values else 0.0
 
     recovery_results = [r.recovery for r in results if r.recovery is not None]

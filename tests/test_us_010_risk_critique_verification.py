@@ -11,6 +11,7 @@ class TestUS010RiskCritiqueVerification(unittest.TestCase):
     """Keep high-risk answer safeguards explicit and testable."""
 
     def test_story_contract(self) -> None:
+        """Verify US-010 story file has required sections, terms, and minimum bullet counts."""
         expectation = StoryExpectation(
             story_id="US-010",
             slug="risk-critique-verification",

@@ -7,6 +7,8 @@ from enum import Enum
 
 
 class ImplementationStatus(str, Enum):
+    """Implementation state of a component relative to its research foundation."""
+
     IMPLEMENTED = "implemented"
     DEFERRED = "deferred"
     SIMPLIFIED = "simplified"
@@ -14,12 +16,15 @@ class ImplementationStatus(str, Enum):
 
 @dataclass(frozen=True)
 class PaperReference:
+    """A research paper that underpins one or more APEX-RAG components."""
+
     key: str
     title: str
     url: str
     contribution_summary: str
 
     def __post_init__(self) -> None:
+        """Validate that key, URL, and contribution_summary are non-empty and well-formed."""
         if not self.key:
             raise ValueError("key must not be empty")
         if not self.url.startswith(("https://", "http://")):
@@ -30,12 +35,15 @@ class PaperReference:
 
 @dataclass(frozen=True)
 class ComponentMapping:
+    """Maps a pipeline component to one or more research papers that motivated it."""
+
     component_name: str
     paper_keys: tuple[str, ...]
     status: ImplementationStatus
     notes: str
 
     def __post_init__(self) -> None:
+        """Validate that component_name is non-empty and at least one paper key is provided."""
         if not self.component_name:
             raise ValueError("component_name must not be empty")
         if not self.paper_keys:
@@ -44,28 +52,35 @@ class ComponentMapping:
 
 @dataclass
 class ResearchRegistry:
+    """Holds all registered papers and component mappings for the project."""
+
     papers: dict[str, PaperReference] = field(default_factory=dict)
     mappings: list[ComponentMapping] = field(default_factory=list)
 
     def add_paper(self, paper: PaperReference) -> None:
+        """Register a paper by its key; overwrites any existing entry with the same key."""
         self.papers[paper.key] = paper
 
     def add_mapping(self, mapping: ComponentMapping) -> None:
+        """Add a component mapping after verifying all referenced paper keys exist."""
         unknown = [k for k in mapping.paper_keys if k not in self.papers]
         if unknown:
             raise ValueError(f"Mapping references unknown paper keys: {unknown}")
         self.mappings.append(mapping)
 
     def papers_for_component(self, component_name: str) -> list[PaperReference]:
+        """Return all papers linked to the named component, or an empty list if unknown."""
         for mapping in self.mappings:
             if mapping.component_name == component_name:
                 return [self.papers[k] for k in mapping.paper_keys if k in self.papers]
         return []
 
     def components_for_paper(self, paper_key: str) -> list[ComponentMapping]:
+        """Return all component mappings that reference the given paper key."""
         return [m for m in self.mappings if paper_key in m.paper_keys]
 
     def deferred_ideas(self) -> list[ComponentMapping]:
+        """Return all mappings whose status is DEFERRED."""
         return [m for m in self.mappings if m.status == ImplementationStatus.DEFERRED]
 
     def validate(self) -> list[str]:

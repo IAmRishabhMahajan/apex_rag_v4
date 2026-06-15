@@ -11,6 +11,7 @@ class TestUS003ExpertRetrievalRouting(unittest.TestCase):
     """Keep expert routing explicit enough for future integrations."""
 
     def test_story_contract(self) -> None:
+        """Verify US-003 story file has required sections, terms, and minimum bullet counts."""
         expectation = StoryExpectation(
             story_id="US-003",
             slug="expert-retrieval-routing",

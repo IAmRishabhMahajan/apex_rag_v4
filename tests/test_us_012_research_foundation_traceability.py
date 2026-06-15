@@ -11,6 +11,7 @@ class TestUS012ResearchFoundationTraceability(unittest.TestCase):
     """Keep research influences visible without overstating implementation."""
 
     def test_story_contract(self) -> None:
+        """Verify US-012 story file has required sections, terms, and minimum bullet counts."""
         expectation = StoryExpectation(
             story_id="US-012",
             slug="research-foundation-traceability",

@@ -11,6 +11,7 @@ class TestUS004EvidenceFusion(unittest.TestCase):
     """Keep evidence fusion grounded in traceability and provenance."""
 
     def test_story_contract(self) -> None:
+        """Verify US-004 story file has required sections, terms, and minimum bullet counts."""
         expectation = StoryExpectation(
             story_id="US-004",
             slug="evidence-fusion",

@@ -11,6 +11,7 @@ class TestUS011ApexEvalFramework(unittest.TestCase):
     """Keep evaluation coverage broad enough for the full RAG pipeline."""
 
     def test_story_contract(self) -> None:
+        """Verify US-011 story file has required sections, terms, and minimum bullet counts."""
         expectation = StoryExpectation(
             story_id="US-011",
             slug="apex-eval-framework",

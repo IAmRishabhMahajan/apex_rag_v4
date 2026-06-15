@@ -11,6 +11,7 @@ class TestUS005ValidationMesh(unittest.TestCase):
     """Keep validation gates present across the pipeline stages."""
 
     def test_story_contract(self) -> None:
+        """Verify US-005 story file has required sections, terms, and minimum bullet counts."""
         expectation = StoryExpectation(
             story_id="US-005",
             slug="validation-mesh",

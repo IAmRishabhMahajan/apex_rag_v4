@@ -12,6 +12,8 @@ from src.apex_rag.query_intelligence import QueryProfile
 
 
 class FailureClass(str, Enum):
+    """Root-cause category for a retrieval failure that triggers a repair iteration."""
+
     NO_EVIDENCE = "no_evidence"
     LOW_RELEVANCE = "low_relevance"
     CONFLICTING_EVIDENCE = "conflicting_evidence"
@@ -21,6 +23,8 @@ class FailureClass(str, Enum):
 
 
 class RecoveryStrategy(str, Enum):
+    """Recovery action paired to each FailureClass."""
+
     EXPAND_QUERY = "expand_query"
     REWRITE_QUERY = "rewrite_query"
     ARBITRATE_CONFLICTS = "arbitrate_conflicts"
@@ -41,6 +45,8 @@ _FAILURE_TO_RECOVERY: dict[FailureClass, RecoveryStrategy] = {
 
 @dataclass(frozen=True)
 class RepairAttempt:
+    """Record of a single repair iteration: what failed, what was tried, and whether it helped."""
+
     iteration: int
     failure_class: FailureClass
     recovery_strategy: RecoveryStrategy
@@ -51,6 +57,8 @@ class RepairAttempt:
 
 @dataclass(frozen=True)
 class RepairResult:
+    """Final outcome of the repair loop: success flag, confidence, attempts, and final bundle."""
+
     succeeded: bool
     final_confidence: float
     iterations_used: int

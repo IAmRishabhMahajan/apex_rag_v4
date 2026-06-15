@@ -9,6 +9,8 @@ from src.apex_rag.evidence_fusion import ConflictStatus, EvidenceBundle
 
 
 class GapType(str, Enum):
+    """Categories of evidence quality gap that trigger repair or escalation."""
+
     MISSING_EVIDENCE = "missing_evidence"
     LOW_RELEVANCE = "low_relevance"
     STALE_EVIDENCE = "stale_evidence"
@@ -18,6 +20,8 @@ class GapType(str, Enum):
 
 @dataclass(frozen=True)
 class EvidenceScores:
+    """Five quality dimensions for an EvidenceBundle, each in [0.0, 1.0]."""
+
     authority: float
     freshness: float
     agreement: float
@@ -26,6 +30,7 @@ class EvidenceScores:
     reason: str
 
     def __post_init__(self) -> None:
+        """Validate that all score dimensions are within the [0.0, 1.0] range."""
         for name, val in (
             ("authority", self.authority),
             ("freshness", self.freshness),
@@ -39,6 +44,8 @@ class EvidenceScores:
 
 @dataclass(frozen=True)
 class GapReport:
+    """Describes a single evidence quality gap and how to address it."""
+
     gap_type: GapType
     description: str
     affected_claim_ids: tuple[str, ...]
@@ -47,6 +54,8 @@ class GapReport:
 
 @dataclass(frozen=True)
 class ScoredBundle:
+    """An EvidenceBundle annotated with quality scores, gap reports, and a sufficiency verdict."""
+
     bundle: EvidenceBundle
     scores: EvidenceScores
     gaps: tuple[GapReport, ...]
@@ -115,6 +124,7 @@ def _composite_confidence(
     agreement: float,
     completeness: float,
 ) -> float:
+    """Compute a weighted composite confidence score from the four sub-scores."""
     return round((authority * 0.25 + freshness * 0.25 + agreement * 0.3 + completeness * 0.2), 2)
 
 
@@ -128,6 +138,7 @@ def _detect_gaps(
     scores: EvidenceScores,
     claim_ids: tuple[str, ...],
 ) -> tuple[GapReport, ...]:
+    """Identify quality gaps in the bundle based on scores and coverage."""
     gaps: list[GapReport] = []
 
     if not bundle.items:

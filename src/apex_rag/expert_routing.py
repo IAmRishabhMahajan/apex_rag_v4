@@ -9,6 +9,8 @@ from src.apex_rag.retrieval_planning import RetrievalPlan, RetrievalStrategy
 
 
 class ExpertType(str, Enum):
+    """Identifiers for the available retrieval expert adapters."""
+
     POLICY = "policy"
     RESEARCH = "research"
     ANALYTICS = "analytics"
@@ -19,6 +21,8 @@ class ExpertType(str, Enum):
 
 @dataclass(frozen=True)
 class ExpertSelection:
+    """A single expert chosen for a retrieval strategy, with confidence and reason."""
+
     expert: ExpertType
     confidence: float
     reason: str
@@ -26,16 +30,20 @@ class ExpertSelection:
 
 @dataclass(frozen=True)
 class RoutingResult:
+    """The complete output of the routing step: ordered expert selections and degradation status."""
+
     selections: tuple[ExpertSelection, ...]
     is_degraded: bool
     unavailable_experts: tuple[ExpertType, ...]
 
     @property
     def primary_expert(self) -> ExpertType:
+        """The first (highest-priority) selected expert."""
         return self.selections[0].expert
 
     @property
     def is_multi_expert(self) -> bool:
+        """True when more than one expert was selected for this query."""
         return len(self.selections) > 1
 
 
@@ -43,6 +51,7 @@ class ExpertUnavailableError(Exception):
     """Raised when a required expert cannot be satisfied and no fallback exists."""
 
     def __init__(self, expert: ExpertType) -> None:
+        """Store the unavailable expert type on the exception for upstream handling."""
         super().__init__(f"Expert '{expert.value}' is unavailable and no fallback is configured.")
         self.expert = expert
 

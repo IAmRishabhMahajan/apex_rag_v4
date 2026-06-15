@@ -11,6 +11,8 @@ from src.apex_rag.query_intelligence import Intent, QueryProfile
 
 
 class ValidationStatus(str, Enum):
+    """Outcome of a pipeline-stage validation check."""
+
     APPROVED = "approved"
     REJECTED = "rejected"
     REPAIR = "repair"
@@ -18,6 +20,8 @@ class ValidationStatus(str, Enum):
 
 
 class Severity(str, Enum):
+    """Severity level associated with a ValidationResult."""
+
     INFO = "info"
     WARNING = "warning"
     ERROR = "error"
@@ -25,6 +29,8 @@ class Severity(str, Enum):
 
 
 class PipelineStage(str, Enum):
+    """Pipeline stage that produced a ValidationResult."""
+
     QUERY = "query"
     RETRIEVAL = "retrieval"
     FUSION = "fusion"
@@ -35,6 +41,8 @@ class PipelineStage(str, Enum):
 
 @dataclass(frozen=True)
 class ValidationResult:
+    """Structured outcome of a single validation check at a pipeline stage."""
+
     status: ValidationStatus
     severity: Severity
     stage: PipelineStage
@@ -44,10 +52,12 @@ class ValidationResult:
 
     @property
     def passed(self) -> bool:
+        """True when the validation outcome is APPROVED."""
         return self.status == ValidationStatus.APPROVED
 
     @property
     def blocks_downstream(self) -> bool:
+        """True when the outcome is REJECTED or ESCALATE, halting downstream stages."""
         return self.status in (ValidationStatus.REJECTED, ValidationStatus.ESCALATE)
 
 
@@ -55,6 +65,7 @@ class ValidationBlockedError(Exception):
     """Raised when a rejected or escalated ValidationResult blocks downstream processing."""
 
     def __init__(self, result: ValidationResult) -> None:
+        """Carry the full ValidationResult so upstream handlers can inspect details."""
         super().__init__(
             f"Stage '{result.stage.value}' blocked downstream: {'; '.join(result.messages)}"
         )
@@ -62,6 +73,7 @@ class ValidationBlockedError(Exception):
 
 
 def _approved(stage: PipelineStage, message: str = "Validation passed.") -> ValidationResult:
+    """Build an APPROVED ValidationResult with INFO severity."""
     return ValidationResult(
         status=ValidationStatus.APPROVED,
         severity=Severity.INFO,
@@ -79,6 +91,7 @@ def _rejected(
     affected: tuple[str, ...] = (),
     severity: Severity = Severity.ERROR,
 ) -> ValidationResult:
+    """Build a REJECTED ValidationResult with the given severity and hints."""
     return ValidationResult(
         status=ValidationStatus.REJECTED,
         severity=severity,
@@ -95,6 +108,7 @@ def _repair(
     repair_hints: tuple[str, ...],
     affected: tuple[str, ...] = (),
 ) -> ValidationResult:
+    """Build a REPAIR ValidationResult with WARNING severity."""
     return ValidationResult(
         status=ValidationStatus.REPAIR,
         severity=Severity.WARNING,
@@ -111,6 +125,7 @@ def _escalate(
     repair_hints: tuple[str, ...] = (),
     affected: tuple[str, ...] = (),
 ) -> ValidationResult:
+    """Build an ESCALATE ValidationResult with CRITICAL severity."""
     return ValidationResult(
         status=ValidationStatus.ESCALATE,
         severity=Severity.CRITICAL,

@@ -75,6 +75,7 @@ def assert_story_contract(test_case: unittest.TestCase, expectation: StoryExpect
 
 
 def _section_body(text: str, section: str) -> str:
+    """Extract the body of a markdown section between its heading and the next ## heading."""
     pattern = rf"(?ms)^## {re.escape(section)}\n\n(?P<body>.*?)(?=^## |\Z)"
     match = re.search(pattern, text)
     if match is None:
@@ -83,4 +84,5 @@ def _section_body(text: str, section: str) -> str:
 
 
 def _bullet_count(text: str) -> int:
+    """Count the number of '- ' bullet points in a markdown text block."""
     return len(re.findall(r"(?m)^- ", text))

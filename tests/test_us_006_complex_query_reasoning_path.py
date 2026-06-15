@@ -11,6 +11,7 @@ class TestUS006ComplexQueryReasoningPath(unittest.TestCase):
     """Keep the complex path optional, claim-based, and source-preserving."""
 
     def test_story_contract(self) -> None:
+        """Verify US-006 story file has required sections, terms, and minimum bullet counts."""
         expectation = StoryExpectation(
             story_id="US-006",
             slug="complex-query-reasoning-path",

@@ -12,6 +12,8 @@ from src.apex_rag.query_intelligence import QueryProfile
 
 
 class RiskCategory(str, Enum):
+    """Domain categories that require special handling and disclaimers."""
+
     NORMAL = "normal"
     MEDICAL = "medical"
     LEGAL = "legal"
@@ -21,6 +23,8 @@ class RiskCategory(str, Enum):
 
 @dataclass(frozen=True)
 class RiskAssessment:
+    """Result of classifying a query into a risk category."""
+
     category: RiskCategory
     is_high_risk: bool
     signals: tuple[str, ...]
@@ -29,6 +33,8 @@ class RiskAssessment:
 
 @dataclass(frozen=True)
 class CritiqueResult:
+    """Outcome of critiquing a generated answer for unsupported or hedged content."""
+
     passed: bool
     issues: tuple[str, ...]
     removed_sentences: tuple[str, ...]
@@ -38,6 +44,8 @@ class CritiqueResult:
 
 @dataclass(frozen=True)
 class VerifiedAnswer:
+    """Final answer after risk assessment and critique, with escalation flag."""
+
     text: str
     risk_assessment: RiskAssessment
     critique: CritiqueResult

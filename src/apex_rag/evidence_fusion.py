@@ -9,6 +9,8 @@ from enum import Enum
 
 
 class ConflictStatus(str, Enum):
+    """Conflict classification assigned to each EvidenceItem after fusion."""
+
     NONE = "none"
     CONFLICT = "conflict"
     DUPLICATE = "duplicate"
@@ -16,6 +18,8 @@ class ConflictStatus(str, Enum):
 
 @dataclass(frozen=True)
 class CitationMetadata:
+    """Provenance record that must accompany every retrieved evidence item."""
+
     source_id: str
     title: str
     url: str
@@ -25,6 +29,8 @@ class CitationMetadata:
 
 @dataclass
 class EvidenceItem:
+    """A single retrieved passage with its citation and conflict classification."""
+
     content: str
     citation: CitationMetadata
     claim_ids: tuple[str, ...]
@@ -32,9 +38,11 @@ class EvidenceItem:
     content_hash: str = field(init=False)
 
     def __post_init__(self) -> None:
+        """Compute the SHA-256 content hash immediately after construction."""
         self.content_hash = hashlib.sha256(self.content.strip().lower().encode()).hexdigest()
 
     def validate(self) -> list[str]:
+        """Return a list of validation error strings; empty list means the item is valid."""
         errors: list[str] = []
         if not self.content.strip():
             errors.append("EvidenceItem content must not be empty.")
@@ -47,18 +55,23 @@ class EvidenceItem:
 
 @dataclass
 class EvidenceBundle:
+    """A validated, fused collection of evidence items for a single query."""
+
     items: list[EvidenceItem]
     query_id: str
 
     def by_claim(self, claim_id: str) -> list[EvidenceItem]:
+        """Return all items that are linked to the given claim ID."""
         return [item for item in self.items if claim_id in item.claim_ids]
 
     @property
     def conflict_count(self) -> int:
+        """Number of items flagged as CONFLICT."""
         return sum(1 for item in self.items if item.conflict_status == ConflictStatus.CONFLICT)
 
     @property
     def duplicate_count(self) -> int:
+        """Number of items flagged as DUPLICATE."""
         return sum(1 for item in self.items if item.conflict_status == ConflictStatus.DUPLICATE)
 
 
@@ -66,6 +79,7 @@ class EvidenceValidationError(Exception):
     """Raised when an EvidenceItem fails its validation contract."""
 
     def __init__(self, errors: list[str]) -> None:
+        """Store the list of validation error strings on the exception."""
         super().__init__(f"Evidence validation failed: {'; '.join(errors)}")
         self.errors = errors
 

@@ -11,6 +11,7 @@ class TestUS007EvidenceScoringGapDetection(unittest.TestCase):
     """Keep evidence scoring connected to repairable gap reports."""
 
     def test_story_contract(self) -> None:
+        """Verify US-007 story file has required sections, terms, and minimum bullet counts."""
         expectation = StoryExpectation(
             story_id="US-007",
             slug="evidence-scoring-gap-detection",

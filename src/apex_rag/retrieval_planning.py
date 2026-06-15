@@ -14,6 +14,8 @@ from src.apex_rag.query_intelligence import (
 
 
 class RetrievalStrategy(str, Enum):
+    """Retrieval strategies available to the planner."""
+
     STANDARD = "standard"
     MULTI_HOP = "multi_hop"
     GRAPH = "graph"
@@ -23,6 +25,8 @@ class RetrievalStrategy(str, Enum):
 
 
 class EvidenceType(str, Enum):
+    """Types of evidence sources that a strategy can produce."""
+
     DOCUMENT = "document"
     STRUCTURED = "structured"
     GRAPH_NODE = "graph_node"
@@ -32,6 +36,8 @@ class EvidenceType(str, Enum):
 
 @dataclass(frozen=True)
 class RetrievalPlan:
+    """Describes which strategies, experts, and evidence types to use for a query."""
+
     strategies: tuple[RetrievalStrategy, ...]
     selected_experts: tuple[str, ...]
     required_evidence_types: tuple[EvidenceType, ...]
@@ -41,6 +47,7 @@ class RetrievalPlan:
 
     @property
     def is_multi_strategy(self) -> bool:
+        """True when more than one retrieval strategy was selected."""
         return len(self.strategies) > 1
 
 
@@ -64,11 +71,13 @@ _FRESHNESS_KEYWORDS = frozenset(
 
 
 def _query_contains(query: str, keywords: frozenset[str]) -> bool:
+    """Return True when any keyword from the set appears in the lowercased query."""
     lower = query.lower()
     return any(kw in lower for kw in keywords)
 
 
 def _needs_freshness(profile: QueryProfile) -> bool:
+    """Return True when the query requires up-to-date or time-sensitive retrieval."""
     if profile.intent in _FRESHNESS_INTENTS:
         return True
     if _query_contains(profile.raw_query, _FRESHNESS_KEYWORDS):
@@ -80,14 +89,17 @@ def _needs_freshness(profile: QueryProfile) -> bool:
 
 
 def _needs_analytics(profile: QueryProfile) -> bool:
+    """Return True when the query asks for aggregated metrics or structured data."""
     return _query_contains(profile.raw_query, _ANALYTICS_KEYWORDS)
 
 
 def _needs_graph(profile: QueryProfile) -> bool:
+    """Return True when the query asks about relationships or connected entities."""
     return _query_contains(profile.raw_query, _GRAPH_KEYWORDS)
 
 
 def _needs_multi_hop(profile: QueryProfile) -> bool:
+    """Return True when investigation intent or multiple non-date entities signal multi-hop need."""
     if profile.intent in _INVESTIGATION_INTENTS:
         return True
     entity_count = sum(1 for e in profile.entities if e.entity_type not in (EntityType.DATE,))
