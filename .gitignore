@@ -216,3 +216,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# APEX-RAG generated outputs
+data/
+graphify-out/
+*.xlsx
+test_results.json
+benchmarks/**/*.json
