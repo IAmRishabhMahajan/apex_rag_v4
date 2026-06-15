@@ -9,10 +9,10 @@ from typing import Any
 
 from src.apex_rag.pipeline import PipelineResult, run_pipeline
 
-
 # ---------------------------------------------------------------------------
 # Text normalisation (standard QA evaluation protocol)
 # ---------------------------------------------------------------------------
+
 
 def normalize_answer(s: str) -> str:
     """Lowercase, strip articles, punctuation, and extra whitespace."""
@@ -30,6 +30,7 @@ def _tokens(s: str) -> list[str]:
 # ---------------------------------------------------------------------------
 # Answer-level metrics
 # ---------------------------------------------------------------------------
+
 
 def exact_match(prediction: str, gold: str) -> float:
     """Return 1.0 when normalized strings are identical."""
@@ -63,6 +64,7 @@ def best_token_f1(prediction: str, golds: list[str]) -> float:
 # Retrieval metrics
 # ---------------------------------------------------------------------------
 
+
 def compute_mrr(retrieved_ids: list[str], relevant_ids: set[str], k: int = 10) -> float:
     """Mean reciprocal rank at k."""
     for rank, doc_id in enumerate(retrieved_ids[:k], 1):
@@ -90,6 +92,7 @@ def compute_precision_at_k(retrieved_ids: list[str], relevant_ids: set[str], k: 
 # ---------------------------------------------------------------------------
 # Pipeline helpers
 # ---------------------------------------------------------------------------
+
 
 def safe_run_pipeline(
     query: str,

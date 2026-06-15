@@ -1,8 +1,8 @@
 """Parse test_results.json and write a structured Excel workbook."""
+
 from __future__ import annotations
 
 import json
-import re
 from datetime import datetime
 from pathlib import Path
 
@@ -11,18 +11,19 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
 # ── colours ──────────────────────────────────────────────────────────────────
-GREEN  = PatternFill("solid", fgColor="C6EFCE")
-RED    = PatternFill("solid", fgColor="FFC7CE")
+GREEN = PatternFill("solid", fgColor="C6EFCE")
+RED = PatternFill("solid", fgColor="FFC7CE")
 YELLOW = PatternFill("solid", fgColor="FFEB9C")
-BLUE   = PatternFill("solid", fgColor="BDD7EE")
-GREY   = PatternFill("solid", fgColor="D9D9D9")
-WHITE  = PatternFill("solid", fgColor="FFFFFF")
+BLUE = PatternFill("solid", fgColor="BDD7EE")
+GREY = PatternFill("solid", fgColor="D9D9D9")
+WHITE = PatternFill("solid", fgColor="FFFFFF")
 
-HEADER_FONT  = Font(bold=True, color="FFFFFF", size=11)
-HEADER_FILL  = PatternFill("solid", fgColor="2F5496")
+HEADER_FONT = Font(bold=True, color="FFFFFF", size=11)
+HEADER_FILL = PatternFill("solid", fgColor="2F5496")
 SECTION_FONT = Font(bold=True, size=10)
 
 # ── helpers ───────────────────────────────────────────────────────────────────
+
 
 def _h(ws, row: int, col: int, value, bold: bool = False, fill=None, align: str = "center") -> None:
     cell = ws.cell(row=row, column=col, value=value)
@@ -36,18 +37,17 @@ def _h(ws, row: int, col: int, value, bold: bool = False, fill=None, align: str 
 def _header_row(ws, row: int, cols: list[str]) -> None:
     for c, label in enumerate(cols, 1):
         cell = ws.cell(row=row, column=c, value=label)
-        cell.font  = HEADER_FONT
-        cell.fill  = HEADER_FILL
+        cell.font = HEADER_FONT
+        cell.fill = HEADER_FILL
         cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
 
 
 def _auto_width(ws, min_w: int = 12, max_w: int = 48) -> None:
     for col_cells in ws.columns:
-        length = max(
-            len(str(c.value or "")) for c in col_cells
+        length = max(len(str(c.value or "")) for c in col_cells)
+        ws.column_dimensions[get_column_letter(col_cells[0].column)].width = min(
+            max_w, max(min_w, length + 2)
         )
-        ws.column_dimensions[get_column_letter(col_cells[0].column)].width = \
-            min(max_w, max(min_w, length + 2))
 
 
 # ── module groupings ──────────────────────────────────────────────────────────
@@ -112,24 +112,25 @@ def _status_fill(outcome: str):
 # Sheet builders
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def _sheet_summary(wb: openpyxl.Workbook, data: dict) -> None:
     """Overview sheet: headline numbers + run metadata."""
     ws = wb.create_sheet("Summary")
     ws.sheet_view.showGridLines = False
 
-    total   = data["summary"]["total"]
-    passed  = data["summary"]["passed"]
-    failed  = data["summary"].get("failed", 0)
-    errors  = data["summary"].get("error", 0)
+    total = data["summary"]["total"]
+    passed = data["summary"]["passed"]
+    failed = data["summary"].get("failed", 0)
+    errors = data["summary"].get("error", 0)
     skipped = data["summary"].get("skipped", 0)
     duration = data.get("duration", 0.0)
-    run_ts   = datetime.fromtimestamp(data.get("created", datetime.now().timestamp()))
+    run_ts = datetime.fromtimestamp(data.get("created", datetime.now().timestamp()))
 
     # Title
     ws.merge_cells("A1:F1")
     cell = ws["A1"]
     cell.value = "APEX-RAG v4 — Test Results"
-    cell.font  = Font(bold=True, size=16, color="2F5496")
+    cell.font = Font(bold=True, size=16, color="2F5496")
     cell.alignment = Alignment(horizontal="center", vertical="center")
     ws.row_dimensions[1].height = 32
 
@@ -137,17 +138,21 @@ def _sheet_summary(wb: openpyxl.Workbook, data: dict) -> None:
     ws.merge_cells("A2:F2")
     meta = ws["A2"]
     meta.value = f"Run: {run_ts.strftime('%Y-%m-%d %H:%M')}   |   Duration: {duration:.2f}s"
-    meta.font  = Font(italic=True, size=10, color="595959")
+    meta.font = Font(italic=True, size=10, color="595959")
     meta.alignment = Alignment(horizontal="center", vertical="center")
 
     # Scorecards
     cards = [
-        ("Total",   total,   BLUE),
-        ("Passed",  passed,  GREEN),
-        ("Failed",  failed,  RED if failed else WHITE),
-        ("Errors",  errors,  RED if errors else WHITE),
+        ("Total", total, BLUE),
+        ("Passed", passed, GREEN),
+        ("Failed", failed, RED if failed else WHITE),
+        ("Errors", errors, RED if errors else WHITE),
         ("Skipped", skipped, YELLOW if skipped else WHITE),
-        ("Pass %",  f"{passed/total*100:.1f}%" if total else "—", GREEN if failed == 0 else YELLOW),
+        (
+            "Pass %",
+            f"{passed / total * 100:.1f}%" if total else "—",
+            GREEN if failed == 0 else YELLOW,
+        ),
     ]
     ws.row_dimensions[4].height = 24
     ws.row_dimensions[5].height = 36
@@ -168,7 +173,7 @@ def _sheet_summary(wb: openpyxl.Workbook, data: dict) -> None:
         us = _us_from_nodeid(test["nodeid"])
         if us not in by_module:
             by_module[us] = {"total": 0, "passed": 0, "failed": 0}
-        by_module[us]["total"]  += 1
+        by_module[us]["total"] += 1
         if test["outcome"] == "passed":
             by_module[us]["passed"] += 1
         elif test["outcome"] in ("failed", "error"):
@@ -182,7 +187,7 @@ def _sheet_summary(wb: openpyxl.Workbook, data: dict) -> None:
         story_name = _US_MAP.get(us_key, "—")
         ws.cell(row=row, column=1, value=us_key).alignment = Alignment(horizontal="center")
         ws.cell(row=row, column=2, value=story_name).alignment = Alignment(horizontal="left")
-        ws.cell(row=row, column=3, value=m["total"]).alignment  = Alignment(horizontal="center")
+        ws.cell(row=row, column=3, value=m["total"]).alignment = Alignment(horizontal="center")
         ws.cell(row=row, column=4, value=m["passed"]).alignment = Alignment(horizontal="center")
         ws.cell(row=row, column=5, value=m["failed"]).alignment = Alignment(horizontal="center")
         pct_cell = ws.cell(row=row, column=6, value=f"{pct:.0f}%")
@@ -215,7 +220,7 @@ def _sheet_all_tests(wb: openpyxl.Workbook, data: dict) -> None:
         # Parse class + test name from nodeid
         parts = nodeid.split("::")
         test_class = parts[1] if len(parts) >= 3 else "—"
-        test_name  = parts[-1]
+        test_name = parts[-1]
 
         row = i + 1
         ws.cell(row=row, column=1, value=i).alignment = Alignment(horizontal="center")
@@ -226,7 +231,9 @@ def _sheet_all_tests(wb: openpyxl.Workbook, data: dict) -> None:
         cell = ws.cell(row=row, column=5, value=outcome.upper())
         cell.fill = fill
         cell.alignment = Alignment(horizontal="center")
-        ws.cell(row=row, column=6, value=round(duration, 4)).alignment = Alignment(horizontal="right")
+        ws.cell(row=row, column=6, value=round(duration, 4)).alignment = Alignment(
+            horizontal="right"
+        )
 
     _auto_width(ws)
     ws.column_dimensions["A"].width = 6
@@ -248,8 +255,8 @@ def _sheet_failures(wb: openpyxl.Workbook, data: dict) -> None:
         ws.merge_cells("A1:C1")
         cell = ws["A1"]
         cell.value = "✓ All tests passed — no failures to show."
-        cell.font  = Font(bold=True, color="375623", size=12)
-        cell.fill  = GREEN
+        cell.font = Font(bold=True, color="375623", size=12)
+        cell.fill = GREEN
         cell.alignment = Alignment(horizontal="center", vertical="center")
         ws.row_dimensions[1].height = 28
         return
@@ -257,9 +264,9 @@ def _sheet_failures(wb: openpyxl.Workbook, data: dict) -> None:
     _header_row(ws, 1, ["Story", "Test Node ID", "Outcome", "Error Message"])
     row = 2
     for test in failed_tests:
-        nodeid  = test["nodeid"]
+        nodeid = test["nodeid"]
         outcome = test["outcome"]
-        us      = _us_from_nodeid(nodeid)
+        us = _us_from_nodeid(nodeid)
 
         # Extract short error message
         call = test.get("call") or {}
@@ -273,7 +280,9 @@ def _sheet_failures(wb: openpyxl.Workbook, data: dict) -> None:
         cell = ws.cell(row=row, column=3, value=outcome.upper())
         cell.fill = RED
         cell.alignment = Alignment(horizontal="center")
-        ws.cell(row=row, column=4, value=short_err).alignment = Alignment(horizontal="left", wrap_text=True)
+        ws.cell(row=row, column=4, value=short_err).alignment = Alignment(
+            horizontal="left", wrap_text=True
+        )
         ws.row_dimensions[row].height = 30
         row += 1
 
@@ -299,14 +308,14 @@ def _sheet_by_story(wb: openpyxl.Workbook, data: dict) -> None:
         tests = by_us[us_key]
         story_name = _US_MAP.get(us_key, us_key)
         passed = sum(1 for t in tests if t["outcome"] == "passed")
-        total  = len(tests)
+        total = len(tests)
 
         # Section header
         ws.merge_cells(f"A{row}:E{row}")
         cell = ws[f"A{row}"]
         cell.value = f"{us_key}  —  {story_name}  ({passed}/{total} passed)"
-        cell.font  = Font(bold=True, size=11, color="FFFFFF")
-        cell.fill  = HEADER_FILL if passed == total else PatternFill("solid", fgColor="C00000")
+        cell.font = Font(bold=True, size=11, color="FFFFFF")
+        cell.fill = HEADER_FILL if passed == total else PatternFill("solid", fgColor="C00000")
         cell.alignment = Alignment(horizontal="left", vertical="center", indent=1)
         ws.row_dimensions[row].height = 22
         row += 1
@@ -318,12 +327,12 @@ def _sheet_by_story(wb: openpyxl.Workbook, data: dict) -> None:
         for test in tests:
             parts = test["nodeid"].split("::")
             test_class = parts[1] if len(parts) >= 3 else "—"
-            test_name  = parts[-1]
-            outcome    = test["outcome"]
-            duration   = round(test.get("duration", 0.0), 4)
+            test_name = parts[-1]
+            outcome = test["outcome"]
+            duration = round(test.get("duration", 0.0), 4)
 
             ws.cell(row=row, column=1, value=test_class).alignment = Alignment(horizontal="left")
-            ws.cell(row=row, column=2, value=test_name).alignment  = Alignment(horizontal="left")
+            ws.cell(row=row, column=2, value=test_name).alignment = Alignment(horizontal="left")
             fill = _status_fill(outcome)
             cell = ws.cell(row=row, column=3, value=outcome.upper())
             cell.fill = fill
@@ -344,6 +353,7 @@ def _sheet_by_story(wb: openpyxl.Workbook, data: dict) -> None:
 # Entry point
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def main() -> None:
     src = Path("test_results.json")
     if not src.exists():
@@ -352,7 +362,7 @@ def main() -> None:
     data = json.loads(src.read_text(encoding="utf-8"))
 
     wb = openpyxl.Workbook()
-    wb.remove(wb.active)          # remove default empty sheet
+    wb.remove(wb.active)  # remove default empty sheet
 
     _sheet_summary(wb, data)
     _sheet_all_tests(wb, data)
@@ -361,12 +371,12 @@ def main() -> None:
 
     out = Path("test_results.xlsx")
     wb.save(out)
-    total   = data["summary"]["total"]
-    passed  = data["summary"]["passed"]
-    failed  = data["summary"].get("failed", 0)
+    total = data["summary"]["total"]
+    passed = data["summary"]["passed"]
+    failed = data["summary"].get("failed", 0)
     print(f"Saved -> {out.resolve()}")
     print(f"  {total} tests  |  {passed} passed  |  {failed} failed")
-    print(f"  Sheets: Summary, All Tests, Failures, By Story")
+    print("  Sheets: Summary, All Tests, Failures, By Story")
 
 
 if __name__ == "__main__":

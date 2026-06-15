@@ -45,17 +45,19 @@ class HotpotQAResult:
 def _context_to_items(context: dict, query: str) -> list[dict[str, str]]:
     """Convert HotpotQA context paragraphs to pipeline evidence items."""
     items = []
-    for title, sentences in zip(context["title"], context["sentences"]):
+    for title, sentences in zip(context["title"], context["sentences"], strict=False):
         content = " ".join(sentences).strip()
         if content:
-            items.append(make_item(
-                content=content,
-                source_id=title,
-                title=title,
-                url=f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}",
-                expert="search",
-                query=query,
-            ))
+            items.append(
+                make_item(
+                    content=content,
+                    source_id=title,
+                    title=title,
+                    url=f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}",
+                    expert="search",
+                    query=query,
+                )
+            )
     return items
 
 
@@ -152,9 +154,9 @@ def run(
 
 def print_results(r: HotpotQAResult) -> None:
     """Print HotpotQA results in a readable table."""
-    print(f"\n{'='*55}")
+    print(f"\n{'=' * 55}")
     print(f"  HotpotQA [{r.config}] — {r.split} split")
-    print(f"{'='*55}")
+    print(f"{'=' * 55}")
     print(f"  Examples evaluated : {r.num_examples - r.failures}/{r.num_examples}")
     print(f"  Failures           : {r.failures}")
     print(f"  Answer EM          : {r.answer_em:.3f}")
@@ -164,12 +166,16 @@ def print_results(r: HotpotQAResult) -> None:
     if r.by_type:
         print("\n  By question type:")
         for qtype, scores in r.by_type.items():
-            print(f"    {qtype:12s}  answer_f1={scores['answer_f1']:.3f}  "
-                  f"sf_f1={scores['sf_f1']:.3f}  joint_f1={scores['joint_f1']:.3f}")
+            print(
+                f"    {qtype:12s}  answer_f1={scores['answer_f1']:.3f}  "
+                f"sf_f1={scores['sf_f1']:.3f}  joint_f1={scores['joint_f1']:.3f}"
+            )
     if r.by_level:
         print("\n  By difficulty level:")
         for lvl, scores in r.by_level.items():
-            print(f"    {lvl:8s}  answer_f1={scores['answer_f1']:.3f}  "
-                  f"joint_f1={scores['joint_f1']:.3f}")
+            print(
+                f"    {lvl:8s}  answer_f1={scores['answer_f1']:.3f}  "
+                f"joint_f1={scores['joint_f1']:.3f}"
+            )
     print(f"\n  Elapsed: {r.elapsed_seconds:.1f}s")
-    print(f"{'='*55}\n")
+    print(f"{'=' * 55}\n")

@@ -37,6 +37,7 @@ class _Summary:
 
 def _run_hotpotqa(args: argparse.Namespace) -> _Summary:
     from benchmarks.hotpotqa import print_results, run
+
     r = run(max_examples=args.max_examples)
     print_results(r)
     return _Summary(
@@ -50,6 +51,7 @@ def _run_hotpotqa(args: argparse.Namespace) -> _Summary:
 
 def _run_nq(args: argparse.Namespace) -> _Summary:
     from benchmarks.natural_questions import print_results, run
+
     r = run(max_examples=args.max_examples)
     print_results(r)
     return _Summary(
@@ -63,6 +65,7 @@ def _run_nq(args: argparse.Namespace) -> _Summary:
 
 def _run_triviaqa(args: argparse.Namespace) -> _Summary:
     from benchmarks.triviaqa import print_results, run
+
     r = run(max_examples=args.max_examples)
     print_results(r)
     return _Summary(
@@ -76,6 +79,7 @@ def _run_triviaqa(args: argparse.Namespace) -> _Summary:
 
 def _run_ragbench(args: argparse.Namespace) -> _Summary:
     from benchmarks.ragbench import print_results, run
+
     subsets = args.subsets if args.subsets else None
     r = run(max_examples=args.max_examples, subsets=subsets)
     print_results(r)
@@ -90,6 +94,7 @@ def _run_ragbench(args: argparse.Namespace) -> _Summary:
 
 def _run_multihop(args: argparse.Namespace) -> _Summary:
     from benchmarks.multihop_rag import print_results, run
+
     r = run(max_examples=args.max_examples)
     print_results(r)
     return _Summary(
@@ -115,7 +120,7 @@ def _print_summary(summaries: list[_Summary], total_elapsed: float) -> None:
     print("  APEX-RAG Benchmark Summary")
     print("=" * 62)
     print(f"  {'Benchmark':<22} {'Examples':>8} {'Failures':>8} {'Primary Metric':>16}")
-    print(f"  {'-'*22} {'-'*8} {'-'*8} {'-'*16}")
+    print(f"  {'-' * 22} {'-' * 8} {'-' * 8} {'-' * 16}")
     for s in summaries:
         metric = f"{s.label}={s.primary_f1:.3f}"
         print(f"  {s.name:<22} {s.examples:>8} {s.failures:>8} {metric:>16}")

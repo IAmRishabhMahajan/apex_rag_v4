@@ -19,9 +19,18 @@ from benchmarks._utils import avg, make_item, safe_run_pipeline
 
 # All known RAGBench domain subsets on Hugging Face.
 _ALL_SUBSETS = [
-    "covidqa", "cuad", "finqa", "hotpotqa", "pubmedqa",
-    "techqa", "msmarco", "nq", "squad", "triviaqa",
-    "natural_questions", "bioasq",
+    "covidqa",
+    "cuad",
+    "finqa",
+    "hotpotqa",
+    "pubmedqa",
+    "techqa",
+    "msmarco",
+    "nq",
+    "squad",
+    "triviaqa",
+    "natural_questions",
+    "bioasq",
 ]
 
 
@@ -56,13 +65,15 @@ def _docs_to_items(documents: list[str], query: str) -> list[dict[str, str]]:
     for idx, doc in enumerate(documents):
         content = (doc or "").strip()
         if content:
-            items.append(make_item(
-                content=content,
-                source_id=f"ragbench-doc-{idx}",
-                title=f"Document {idx + 1}",
-                expert="search",
-                query=query,
-            ))
+            items.append(
+                make_item(
+                    content=content,
+                    source_id=f"ragbench-doc-{idx}",
+                    title=f"Document {idx + 1}",
+                    expert="search",
+                    query=query,
+                )
+            )
     return items
 
 
@@ -108,9 +119,7 @@ def _run_subset(
             failures += 1
             continue
 
-        result, err = safe_run_pipeline(
-            query, items, query_id=f"{subset_name}-{i}"
-        )
+        result, err = safe_run_pipeline(query, items, query_id=f"{subset_name}-{i}")
         if result is None:
             failures += 1
             continue
@@ -179,16 +188,18 @@ def run(
 
 def print_results(r: RAGBenchResult) -> None:
     """Print RAGBench results in a readable table."""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("  RAGBench — multi-domain evaluation")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"  Examples evaluated : {r.num_examples - r.failures}/{r.num_examples}")
     print(f"  Failures           : {r.failures}")
     print(f"  Overall Adherence  : {r.overall_adherence:.3f}")
     print(f"  Overall Support    : {r.overall_support_rate:.3f}")
     if r.by_subset:
-        print(f"\n  {'Subset':<22} {'Examples':>8} {'Adherence':>10} {'Support':>8} {'Failures':>8}")
-        print(f"  {'-'*22} {'-'*8} {'-'*10} {'-'*8} {'-'*8}")
+        print(
+            f"\n  {'Subset':<22} {'Examples':>8} {'Adherence':>10} {'Support':>8} {'Failures':>8}"
+        )
+        print(f"  {'-' * 22} {'-' * 8} {'-' * 10} {'-' * 8} {'-' * 8}")
         for name, sr in r.by_subset.items():
             print(
                 f"  {name:<22} {sr.num_examples:>8} "
@@ -196,4 +207,4 @@ def print_results(r: RAGBenchResult) -> None:
                 f"{sr.failures:>8}"
             )
     print(f"\n  Elapsed: {r.elapsed_seconds:.1f}s")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")

@@ -65,19 +65,21 @@ def _pages_to_items(pages: dict, query: str) -> list[dict[str, str]]:
     urls = pages.get("url") or [""] * len(contexts)
     filenames = pages.get("filename") or [""] * len(contexts)
 
-    for ctx, title, url, fname in zip(contexts, titles, urls, filenames):
+    for ctx, title, url, fname in zip(contexts, titles, urls, filenames, strict=False):
         content = (ctx or "")[:_MAX_PASSAGE_CHARS].strip()
         if not content:
             continue
         source_id = url or fname or title or f"src-{len(items)}"
-        items.append(make_item(
-            content=content,
-            source_id=str(source_id),
-            title=str(title),
-            url=str(url),
-            expert="search",
-            query=query,
-        ))
+        items.append(
+            make_item(
+                content=content,
+                source_id=str(source_id),
+                title=str(title),
+                url=str(url),
+                expert="search",
+                query=query,
+            )
+        )
     return items
 
 
@@ -154,13 +156,13 @@ def run(
 
 def print_results(r: TriviaQAResult) -> None:
     """Print TriviaQA results in a readable table."""
-    print(f"\n{'='*55}")
+    print(f"\n{'=' * 55}")
     print(f"  TriviaQA [{r.config}] — {r.split} split")
-    print(f"{'='*55}")
+    print(f"{'=' * 55}")
     print(f"  Examples evaluated : {r.num_examples - r.failures}/{r.num_examples}")
     print(f"  Failures           : {r.failures}")
     print(f"  EM (alias-matched) : {r.em:.3f}")
     print(f"  F1 (alias-matched) : {r.f1:.3f}")
     print(f"  Retrieval Recall@5 : {r.retrieval_recall:.3f}")
     print(f"\n  Elapsed: {r.elapsed_seconds:.1f}s")
-    print(f"{'='*55}\n")
+    print(f"{'=' * 55}\n")

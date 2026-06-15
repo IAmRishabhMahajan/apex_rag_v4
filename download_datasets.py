@@ -26,7 +26,6 @@ from __future__ import annotations
 import argparse
 import itertools
 import json
-import sys
 import time
 from pathlib import Path
 
@@ -37,6 +36,7 @@ RAGBENCH_SUBSETS = ["covidqa", "hotpotqa", "pubmedqa", "finqa", "cuad"]
 
 
 # ── helpers ────────────────────────────────────────────────────────────────────
+
 
 def _cache_path(name: str, n: int) -> Path:
     return DATA_DIR / f"{name}_{n}.json"
@@ -60,6 +60,7 @@ def _save(name: str, n: int, examples: list[dict]) -> None:
 
 # ── per-dataset downloaders ────────────────────────────────────────────────────
 
+
 def download_hotpotqa(n: int, refresh: bool) -> bool:
     """Full download — validation split is only 7 405 examples."""
     if _already_cached("hotpotqa", n, refresh):
@@ -67,21 +68,22 @@ def download_hotpotqa(n: int, refresh: bool) -> bool:
     try:
         print("     Connecting to hotpotqa/hotpot_qa [distractor, validation]...", flush=True)
         from datasets import load_dataset  # type: ignore[import-untyped]
+
         ds = load_dataset("hotpotqa/hotpot_qa", "distractor", split="validation")
         print(f"     Dataset loaded ({len(ds)} total). Extracting {n} examples...", flush=True)
         raw = list(ds.select(range(min(n, len(ds)))))
         examples = [
             {
                 "question": ex["question"],
-                "answer":   ex["answer"],
-                "type":     ex["type"],
-                "level":    ex["level"],
+                "answer": ex["answer"],
+                "type": ex["type"],
+                "level": ex["level"],
                 "context": {
-                    "title":     list(ex["context"]["title"]),
+                    "title": list(ex["context"]["title"]),
                     "sentences": [list(s) for s in ex["context"]["sentences"]],
                 },
                 "supporting_facts": {
-                    "title":   list(ex["supporting_facts"]["title"]),
+                    "title": list(ex["supporting_facts"]["title"]),
                     "sent_id": list(ex["supporting_facts"]["sent_id"]),
                 },
             }
@@ -99,9 +101,12 @@ def download_nq(n: int, refresh: bool) -> bool:
     if _already_cached("nq", n, refresh):
         return True
     try:
-        print("     Streaming google-research-datasets/natural_questions [validation]...", flush=True)
+        print(
+            "     Streaming google-research-datasets/natural_questions [validation]...", flush=True
+        )
         print("     (streaming mode — only the first shard is downloaded)", flush=True)
         from datasets import load_dataset  # type: ignore[import-untyped]
+
         ds = load_dataset(
             "google-research-datasets/natural_questions",
             split="validation",
@@ -110,18 +115,20 @@ def download_nq(n: int, refresh: bool) -> bool:
         MAX_TOKENS = 300
         examples: list[dict] = []
         for i, ex in enumerate(itertools.islice(ds, n)):
-            doc   = ex["document"]
-            anns  = ex.get("annotations", {})
-            query = ex["question"]["text"] if isinstance(ex["question"], dict) else str(ex["question"])
+            doc = ex["document"]
+            anns = ex.get("annotations", {})
+            query = (
+                ex["question"]["text"] if isinstance(ex["question"], dict) else str(ex["question"])
+            )
 
             tokens_field = doc.get("tokens", {}) if isinstance(doc, dict) else {}
-            token_list   = tokens_field.get("token", [])
+            token_list = tokens_field.get("token", [])
             is_html_list = tokens_field.get("is_html", [])
-            text_tokens  = [t for t, h in zip(token_list, is_html_list) if not h]
-            passage      = " ".join(text_tokens[:MAX_TOKENS])
+            text_tokens = [t for t, h in zip(token_list, is_html_list, strict=False) if not h]
+            passage = " ".join(text_tokens[:MAX_TOKENS])
 
             short_answers: list[str] = []
-            yn_answers:    list[str] = []
+            yn_answers: list[str] = []
             if isinstance(anns, dict):
                 for sa_group in anns.get("short_answers", []):
                     if isinstance(sa_group, dict):
@@ -134,16 +141,18 @@ def download_nq(n: int, refresh: bool) -> bool:
                     elif yn in (0, "NO", "no"):
                         yn_answers.append("no")
 
-            examples.append({
-                "query":         query,
-                "passage":       passage,
-                "title":         doc.get("title", "") if isinstance(doc, dict) else "",
-                "url":           doc.get("url", "")   if isinstance(doc, dict) else "",
-                "short_answers": short_answers,
-                "yn_answers":    yn_answers,
-            })
+            examples.append(
+                {
+                    "query": query,
+                    "passage": passage,
+                    "title": doc.get("title", "") if isinstance(doc, dict) else "",
+                    "url": doc.get("url", "") if isinstance(doc, dict) else "",
+                    "short_answers": short_answers,
+                    "yn_answers": yn_answers,
+                }
+            )
             if (i + 1) % 25 == 0:
-                print(f"     ... {i+1}/{n} examples", flush=True)
+                print(f"     ... {i + 1}/{n} examples", flush=True)
 
         _save("nq", n, examples)
         return True
@@ -160,6 +169,7 @@ def download_triviaqa(n: int, refresh: bool) -> bool:
         print("     Streaming mandarjoshi/trivia_qa [rc, validation]...", flush=True)
         print("     (streaming mode — only the first shard is downloaded)", flush=True)
         from datasets import load_dataset  # type: ignore[import-untyped]
+
         ds = load_dataset("mandarjoshi/trivia_qa", "rc", split="validation", streaming=True)
 
         MAX_CHARS = 1500
@@ -175,31 +185,35 @@ def download_triviaqa(n: int, refresh: bool) -> bool:
                     aliases.append(str(val))
             aliases = list(dict.fromkeys(a for a in aliases if a))
 
-            pages    = ex.get("entity_pages") or ex.get("search_results") or {}
+            pages = ex.get("entity_pages") or ex.get("search_results") or {}
             contexts = pages.get("wiki_context") or pages.get("search_context") or []
-            titles   = pages.get("title") or [""] * len(contexts)
-            urls     = pages.get("url")   or [""] * len(contexts)
+            titles = pages.get("title") or [""] * len(contexts)
+            urls = pages.get("url") or [""] * len(contexts)
 
             items_data: list[dict] = []
-            for ctx, ttl, url in zip(contexts, titles, urls):
+            for ctx, ttl, url in zip(contexts, titles, urls, strict=False):
                 content = (ctx or "")[:MAX_CHARS].strip()
                 if content:
-                    items_data.append({
-                        "content":   content,
-                        "source_id": url or ttl or f"src-{len(items_data)}",
-                        "title":     str(ttl),
-                        "url":       str(url),
-                    })
+                    items_data.append(
+                        {
+                            "content": content,
+                            "source_id": url or ttl or f"src-{len(items_data)}",
+                            "title": str(ttl),
+                            "url": str(url),
+                        }
+                    )
 
             if not items_data:
                 continue  # skip examples with no retrievable passages
-            examples.append({
-                "question": ex["question"],
-                "aliases":  aliases,
-                "items":    items_data,
-            })
+            examples.append(
+                {
+                    "question": ex["question"],
+                    "aliases": aliases,
+                    "items": items_data,
+                }
+            )
             if (i + 1) % 25 == 0:
-                print(f"     ... {i+1}/{n} examples", flush=True)
+                print(f"     ... {i + 1}/{n} examples", flush=True)
 
         _save("triviaqa", n, examples)
         return True
@@ -216,14 +230,21 @@ def download_ragbench_subset(subset: str, n: int, refresh: bool) -> bool:
     try:
         print(f"     Downloading galileo-ai/ragbench [{subset}]...", flush=True)
         from datasets import load_dataset  # type: ignore[import-untyped]
-        ds  = load_dataset("galileo-ai/ragbench", subset, split="train")
-        print(f"     Dataset loaded ({len(ds)} total). Extracting {min(n, len(ds))} examples...", flush=True)
+
+        ds = load_dataset("galileo-ai/ragbench", subset, split="train")
+        print(
+            f"     Dataset loaded ({len(ds)} total). Extracting {min(n, len(ds))} examples...",
+            flush=True,
+        )
         raw = list(ds.select(range(min(n, len(ds)))))
         examples = [
             {
                 "query": r.get("question", "") or r.get("query", ""),
-                "docs": (r.get("documents", []) if isinstance(r.get("documents"), list)
-                         else ([r["documents"]] if r.get("documents") else [])),
+                "docs": (
+                    r.get("documents", [])
+                    if isinstance(r.get("documents"), list)
+                    else ([r["documents"]] if r.get("documents") else [])
+                ),
             }
             for r in raw
         ]
@@ -241,31 +262,36 @@ def download_multihop(n: int, refresh: bool) -> bool:
     try:
         print("     Streaming yixuantt/MultiHopRAG [MultiHopRAG, train]...", flush=True)
         from datasets import load_dataset  # type: ignore[import-untyped]
+
         ds = load_dataset("yixuantt/MultiHopRAG", "MultiHopRAG", split="train", streaming=True)
 
         examples: list[dict] = []
         for i, ex in enumerate(itertools.islice(ds, n)):
-            ev_list  = ex.get("evidence_list", []) or []
+            ev_list = ex.get("evidence_list", []) or []
             evidence: list[dict] = []
             for ev in ev_list:
-                facts     = ev.get("facts", [])
-                content   = " ".join(facts) if facts else ev.get("title", "")
+                facts = ev.get("facts", [])
+                content = " ".join(facts) if facts else ev.get("title", "")
                 source_id = ev.get("source", ev.get("title", f"src-{len(evidence)}"))
                 if content.strip():
-                    evidence.append({
-                        "content":   content,
-                        "source_id": str(source_id),
-                        "title":     ev.get("title", ""),
-                        "url":       str(source_id) if str(source_id).startswith("http") else "",
-                    })
-            examples.append({
-                "query":         ex.get("query", ""),
-                "answer":        ex.get("answer", ""),
-                "question_type": ex.get("question_type", "unknown"),
-                "evidence":      evidence,
-            })
+                    evidence.append(
+                        {
+                            "content": content,
+                            "source_id": str(source_id),
+                            "title": ev.get("title", ""),
+                            "url": str(source_id) if str(source_id).startswith("http") else "",
+                        }
+                    )
+            examples.append(
+                {
+                    "query": ex.get("query", ""),
+                    "answer": ex.get("answer", ""),
+                    "question_type": ex.get("question_type", "unknown"),
+                    "evidence": evidence,
+                }
+            )
             if (i + 1) % 25 == 0:
-                print(f"     ... {i+1}/{n} examples", flush=True)
+                print(f"     ... {i + 1}/{n} examples", flush=True)
 
         _save("multihop_rag", n, examples)
         return True
@@ -280,10 +306,10 @@ ALL_DATASETS = ["hotpotqa", "nq", "triviaqa", "ragbench", "multihop"]
 
 DOWNLOADERS = {
     "hotpotqa": ("HotpotQA         [full download, 7 405 validation examples]", download_hotpotqa),
-    "nq":       ("Natural Questions [streaming, 287 shards — extracts first N]", download_nq),
-    "triviaqa": ("TriviaQA          [streaming, 26 shards — extracts first N]",  download_triviaqa),
-    "ragbench": ("RAGBench          [full download, 5 subsets]",                  None),
-    "multihop": ("MultiHop-RAG      [streaming, extracts first N]",               download_multihop),
+    "nq": ("Natural Questions [streaming, 287 shards — extracts first N]", download_nq),
+    "triviaqa": ("TriviaQA          [streaming, 26 shards — extracts first N]", download_triviaqa),
+    "ragbench": ("RAGBench          [full download, 5 subsets]", None),
+    "multihop": ("MultiHop-RAG      [streaming, extracts first N]", download_multihop),
 }
 
 
@@ -293,15 +319,20 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        "--dataset", choices=[*ALL_DATASETS, "all"], default="all",
+        "--dataset",
+        choices=[*ALL_DATASETS, "all"],
+        default="all",
         help="Which dataset to download (default: all)",
     )
     parser.add_argument(
-        "--n", type=int, default=200,
+        "--n",
+        type=int,
+        default=200,
         help="Number of examples to extract per dataset (default: 200)",
     )
     parser.add_argument(
-        "--refresh", action="store_true",
+        "--refresh",
+        action="store_true",
         help="Re-download even if local cache already exists",
     )
     args = parser.parse_args()
@@ -309,7 +340,7 @@ def main() -> None:
     targets = ALL_DATASETS if args.dataset == "all" else [args.dataset]
     N = args.n
 
-    print(f"\nAPEX-RAG Benchmark Dataset Downloader")
+    print("\nAPEX-RAG Benchmark Dataset Downloader")
     print(f"  Examples per dataset : {N}")
     print(f"  Cache directory      : {DATA_DIR}/")
     print(f"  Refresh mode         : {'yes' if args.refresh else 'no'}")

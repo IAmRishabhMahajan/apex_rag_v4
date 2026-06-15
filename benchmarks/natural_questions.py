@@ -49,9 +49,7 @@ def _extract_passage(doc: dict) -> str:
     tokens_field = doc.get("tokens", {})
     token_list = tokens_field.get("token", [])
     is_html_list = tokens_field.get("is_html", [])
-    text_tokens = [
-        t for t, h in zip(token_list, is_html_list) if not h
-    ]
+    text_tokens = [t for t, h in zip(token_list, is_html_list, strict=False) if not h]
     return " ".join(text_tokens[:_MAX_PASSAGE_TOKENS])
 
 
@@ -72,7 +70,7 @@ def _extract_short_answers(annotations: list[dict] | dict, doc_tokens: list[str]
             # Fallback to token spans when text is empty
             starts = sa_group.get("start_token", []) or []
             ends = sa_group.get("end_token", []) or []
-            for start, end in zip(starts, ends):
+            for start, end in zip(starts, ends, strict=False):
                 if not any(answers) and start >= 0 and end > start:
                     answers.append(" ".join(doc_tokens[start:end]))
     else:
@@ -167,14 +165,16 @@ def run(max_examples: int = 200, split: str = "validation") -> NQResult:
                 pass
             continue
 
-        items = [make_item(
-            content=passage,
-            source_id=doc.get("title", f"nq-{i}"),
-            title=doc.get("title", ""),
-            url=doc.get("url", ""),
-            expert="search",
-            query=query,
-        )]
+        items = [
+            make_item(
+                content=passage,
+                source_id=doc.get("title", f"nq-{i}"),
+                title=doc.get("title", ""),
+                url=doc.get("url", ""),
+                expert="search",
+                query=query,
+            )
+        ]
 
         result, err = safe_run_pipeline(query, items, query_id=f"nq-{i}")
         if result is None:
@@ -217,9 +217,7 @@ def run(max_examples: int = 200, split: str = "validation") -> NQResult:
         short_em=avg(short_ems),
         short_f1=avg(short_f1s),
         yes_no_accuracy=yn_correct / yn_total if yn_total else 0.0,
-        no_answer_handling_rate=(
-            no_answer_handled / no_answer_total if no_answer_total else 0.0
-        ),
+        no_answer_handling_rate=(no_answer_handled / no_answer_total if no_answer_total else 0.0),
         by_type=by_type,
         failures=failures,
         elapsed_seconds=time.perf_counter() - t0,
@@ -228,9 +226,9 @@ def run(max_examples: int = 200, split: str = "validation") -> NQResult:
 
 def print_results(r: NQResult) -> None:
     """Print Natural Questions results in a readable table."""
-    print(f"\n{'='*55}")
+    print(f"\n{'=' * 55}")
     print(f"  Natural Questions — {r.split} split")
-    print(f"{'='*55}")
+    print(f"{'=' * 55}")
     print(f"  Examples evaluated : {r.num_examples - r.failures}/{r.num_examples}")
     print(f"  Failures           : {r.failures}")
     print(f"  Short-Answer EM    : {r.short_em:.3f}")
@@ -243,4 +241,4 @@ def print_results(r: NQResult) -> None:
             parts = "  ".join(f"{m}={v:.3f}" for m, v in scores.items())
             print(f"    {qtype:10s}  {parts}")
     print(f"\n  Elapsed: {r.elapsed_seconds:.1f}s")
-    print(f"{'='*55}\n")
+    print(f"{'=' * 55}\n")

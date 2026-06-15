@@ -58,14 +58,16 @@ def _evidence_to_items(evidence_list: list[dict], query: str) -> list[dict[str, 
         content = " ".join(facts) if facts else ev.get("title", "")
         source_id = ev.get("source", ev.get("title", f"src-{len(items)}"))
         if content.strip():
-            items.append(make_item(
-                content=content,
-                source_id=str(source_id),
-                title=ev.get("title", ""),
-                url=str(source_id) if source_id.startswith("http") else "",
-                expert="search",
-                query=query,
-            ))
+            items.append(
+                make_item(
+                    content=content,
+                    source_id=str(source_id),
+                    title=ev.get("title", ""),
+                    url=str(source_id) if source_id.startswith("http") else "",
+                    expert="search",
+                    query=query,
+                )
+            )
     return items
 
 
@@ -102,10 +104,7 @@ def run(max_examples: int = 200, k: int = 5) -> MultiHopRAGResult:
         evidence_list: list[dict] = ex.get("evidence_list", [])
 
         # Gold retrieval: all source IDs from evidence_list
-        gold_ids: set[str] = {
-            str(ev.get("source", ev.get("title", "")))
-            for ev in evidence_list
-        }
+        gold_ids: set[str] = {str(ev.get("source", ev.get("title", ""))) for ev in evidence_list}
 
         items = _evidence_to_items(evidence_list, query)
         result, err = safe_run_pipeline(query, items, query_id=f"multihop-{i}")
@@ -140,9 +139,7 @@ def run(max_examples: int = 200, k: int = 5) -> MultiHopRAGResult:
                 type_buckets[q_type] = {"answer_f1": [], "mrr": [], "recall": []}
             type_buckets[q_type]["answer_f1"].append(f1)
             type_buckets[q_type]["mrr"].append(compute_mrr(b_ids, gold_ids, k=k))
-            type_buckets[q_type]["recall"].append(
-                compute_recall_at_k(b_ids, gold_ids, k=k)
-            )
+            type_buckets[q_type]["recall"].append(compute_recall_at_k(b_ids, gold_ids, k=k))
 
     by_type = {k: {m: avg(v) for m, v in vs.items()} for k, vs in type_buckets.items()}
 
@@ -163,9 +160,9 @@ def run(max_examples: int = 200, k: int = 5) -> MultiHopRAGResult:
 
 def print_results(r: MultiHopRAGResult) -> None:
     """Print MultiHop-RAG results in a readable table."""
-    print(f"\n{'='*55}")
+    print(f"\n{'=' * 55}")
     print(f"  MultiHop-RAG (k={r.k})")
-    print(f"{'='*55}")
+    print(f"{'=' * 55}")
     print(f"  Examples evaluated : {r.num_examples - r.failures}/{r.num_examples}")
     print(f"  Failures           : {r.failures}")
     print(f"  MRR@{r.k}            : {r.mrr:.3f}")
@@ -177,7 +174,9 @@ def print_results(r: MultiHopRAGResult) -> None:
     if r.by_type:
         print("\n  By question type:")
         for qtype, scores in r.by_type.items():
-            print(f"    {qtype:12s}  answer_f1={scores['answer_f1']:.3f}  "
-                  f"mrr={scores['mrr']:.3f}  recall={scores['recall']:.3f}")
+            print(
+                f"    {qtype:12s}  answer_f1={scores['answer_f1']:.3f}  "
+                f"mrr={scores['mrr']:.3f}  recall={scores['recall']:.3f}"
+            )
     print(f"\n  Elapsed: {r.elapsed_seconds:.1f}s")
-    print(f"{'='*55}\n")
+    print(f"{'=' * 55}\n")

@@ -45,23 +45,31 @@ from openpyxl.utils import get_column_letter
 DATA_DIR = Path(__file__).parent / "data"
 
 # ── palette ────────────────────────────────────────────────────────────────────
-_H  = lambda c: PatternFill("solid", fgColor=c)  # noqa: E731
-NAVY   = _H("1F3864"); BLUE  = _H("2F5496"); LBLUE = _H("BDD7EE")
-GREEN  = _H("C6EFCE"); RED   = _H("FFC7CE"); YELLOW = _H("FFEB9C")
-ORANGE = _H("F4B942"); GREY  = _H("D9D9D9"); LGREY  = _H("F2F2F2")
-WHITE  = _H("FFFFFF"); PURPLE = _H("9B59B6"); TEAL   = _H("1ABC9C")
+_H = lambda c: PatternFill("solid", fgColor=c)  # noqa: E731
+NAVY = _H("1F3864")
+BLUE = _H("2F5496")
+LBLUE = _H("BDD7EE")
+GREEN = _H("C6EFCE")
+RED = _H("FFC7CE")
+YELLOW = _H("FFEB9C")
+ORANGE = _H("F4B942")
+GREY = _H("D9D9D9")
+LGREY = _H("F2F2F2")
+WHITE = _H("FFFFFF")
+PURPLE = _H("9B59B6")
+TEAL = _H("1ABC9C")
 
 FAILURE_COLOURS: dict[str, PatternFill] = {
-    "PASS":                    GREEN,
-    "Retrieval Failure":       RED,
-    "Context Truncation":      ORANGE,
-    "Reasoning Failure":       YELLOW,
+    "PASS": GREEN,
+    "Retrieval Failure": RED,
+    "Context Truncation": ORANGE,
+    "Reasoning Failure": YELLOW,
     "Answer Extraction Failure": _H("FFA07A"),
-    "Formatting Failure":      LBLUE,
-    "Hallucination":           _H("FF6B6B"),
-    "Evaluation Mismatch":     _H("A9CCE3"),
-    "Unknown":                 GREY,
-    "Pipeline Error":          _H("C0392B"),
+    "Formatting Failure": LBLUE,
+    "Hallucination": _H("FF6B6B"),
+    "Evaluation Mismatch": _H("A9CCE3"),
+    "Unknown": GREY,
+    "Pipeline Error": _H("C0392B"),
 }
 
 HDR = Font(bold=True, color="FFFFFF", size=10)
@@ -69,6 +77,7 @@ BOLD = Font(bold=True, size=10)
 NORM = Font(size=10)
 
 # ── normalisation helpers ──────────────────────────────────────────────────────
+
 
 def _norm(s: str) -> str:
     """Lowercase, strip articles/punctuation/extra whitespace."""
@@ -87,13 +96,16 @@ def _em(pred: str, gold: str) -> float:
 
 
 def _f1(pred: str, gold: str) -> float:
-    pt = _tokens(pred); gt = _tokens(gold)
+    pt = _tokens(pred)
+    gt = _tokens(gold)
     from collections import Counter
+
     common = Counter(pt) & Counter(gt)
     ns = sum(common.values())
     if ns == 0:
         return 0.0
-    p = ns / len(pt); r = ns / len(gt)
+    p = ns / len(pt)
+    r = ns / len(gt)
     return 2 * p * r / (p + r)
 
 
@@ -142,6 +154,7 @@ _VERBOSE_THRESHOLD_RATIO = 4  # model answer > 4× gold word count → verbose
 
 # ── failure classifier ─────────────────────────────────────────────────────────
 
+
 def classify_failure(
     em: float,
     f1: float,
@@ -165,8 +178,14 @@ def classify_failure(
     # Check for refusal / inability
     if _REFUSAL_PATTERNS.search(model_answer):
         if not answer_in_context:
-            return "Retrieval Failure", "Model expressed uncertainty; supporting document not retrieved."
-        return "Answer Extraction Failure", "Model expressed uncertainty despite answer being present in context."
+            return (
+                "Retrieval Failure",
+                "Model expressed uncertainty; supporting document not retrieved.",
+            )
+        return (
+            "Answer Extraction Failure",
+            "Model expressed uncertainty despite answer being present in context.",
+        )
 
     if not answer_in_context:
         # Gold answer is not present in any retrieved doc at all
@@ -186,11 +205,17 @@ def classify_failure(
 
     # Normalization check — EM=0 but normalized strings match
     if any(_norm(model_answer) == _norm(g) for g in golds):
-        return "Evaluation Mismatch", "Answers are identical after normalization; EM=0 due to surface form."
+        return (
+            "Evaluation Mismatch",
+            "Answers are identical after normalization; EM=0 due to surface form.",
+        )
 
     # High F1 → surface/formatting difference
     if f1 >= 0.75:
-        return "Formatting Failure", f"High F1 ({f1:.3f}) — minor surface-form difference (casing, punctuation, articles)."
+        return (
+            "Formatting Failure",
+            f"High F1 ({f1:.3f}) — minor surface-form difference (casing, punctuation, articles).",
+        )
 
     # Verbose response
     gold_len = max((len(g.split()) for g in golds if g), default=1)
@@ -205,7 +230,7 @@ def classify_failure(
     norm_ctx = _norm(retrieved_context)
     norm_pred = _norm(model_answer)
     pred_words = set(norm_pred.split())
-    ctx_words  = set(norm_ctx.split())
+    ctx_words = set(norm_ctx.split())
     overlap = pred_words & ctx_words
     if pred_words and len(overlap) / len(pred_words) < 0.2:
         return (
@@ -230,14 +255,16 @@ def classify_failure(
 
 # ── benchmark loaders and evaluators ──────────────────────────────────────────
 
+
 def _load_json(path: Path) -> list[dict]:
     if not path.exists():
         return []
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def _run(query: str, items: list[dict[str, str]], qid: str,
-         candidate_claims: list[str] | None = None):
+def _run(
+    query: str, items: list[dict[str, str]], qid: str, candidate_claims: list[str] | None = None
+):
     """Safe pipeline call. Returns (PipelineResult | None, error_str).
 
     candidate_claims: the gold answers (or extracted answer candidates) passed to
@@ -245,21 +272,28 @@ def _run(query: str, items: list[dict[str, str]], qid: str,
     real answer candidates it would echo the question text back as the answer.
     """
     from src.apex_rag.pipeline import run_pipeline
+
     try:
-        return run_pipeline(query, items, query_id=qid,
-                            candidate_claims=candidate_claims), ""
+        return run_pipeline(query, items, query_id=qid, candidate_claims=candidate_claims), ""
     except Exception as exc:  # noqa: BLE001
         return None, f"{type(exc).__name__}: {exc}"
 
 
 def _make_item(
-    content: str, source_id: str, title: str = "",
-    url: str = "", expert: str = "search", query: str = "",
+    content: str,
+    source_id: str,
+    title: str = "",
+    url: str = "",
+    expert: str = "search",
+    query: str = "",
 ) -> dict[str, str]:
     return {
-        "content": content, "source_id": source_id,
-        "title": title or source_id, "url": url,
-        "retrieval_expert": expert, "retrieval_query": query,
+        "content": content,
+        "source_id": source_id,
+        "title": title or source_id,
+        "url": url,
+        "retrieval_expert": expert,
+        "retrieval_query": query,
     }
 
 
@@ -269,23 +303,23 @@ def _extract_result_fields(result, items: list[dict[str, str]]) -> dict[str, Any
     retrieved_ids = [it.citation.source_id for it in bundle_items]
     retrieved_context = "\n\n".join(it.content for it in bundle_items)
 
-    model_answer   = result.answer.text          if result else ""
+    model_answer = result.answer.text if result else ""
     has_limitations = result.answer.has_limitations if result else False
-    faithfulness   = result.eval_result.final.faithfulness   if result else 0.0
-    ctx_adherence  = result.eval_result.claims.support_rate  if result else 0.0
-    unsupported_ct = result.answer.unsupported_claim_count   if result else 0
-    total_claims   = result.eval_result.claims.total_claims  if result else 0
+    faithfulness = result.eval_result.final.faithfulness if result else 0.0
+    ctx_adherence = result.eval_result.claims.support_rate if result else 0.0
+    unsupported_ct = result.answer.unsupported_claim_count if result else 0
+    total_claims = result.eval_result.claims.total_claims if result else 0
 
     return {
-        "retrieved_ids":     retrieved_ids,
+        "retrieved_ids": retrieved_ids,
         "retrieved_context": retrieved_context,
-        "model_answer":      model_answer,
-        "has_limitations":   has_limitations,
-        "faithfulness":      faithfulness,
-        "ctx_adherence":     ctx_adherence,
+        "model_answer": model_answer,
+        "has_limitations": has_limitations,
+        "faithfulness": faithfulness,
+        "ctx_adherence": ctx_adherence,
         "unsupported_claims": unsupported_ct,
-        "total_claims":      total_claims,
-        "num_retrieved":     len(bundle_items),
+        "total_claims": total_claims,
+        "num_retrieved": len(bundle_items),
     }
 
 
@@ -301,26 +335,35 @@ def _build_row(
 ) -> dict[str, Any]:
     """Build one result row dict from all evaluation signals."""
 
-    model_answer      = result_fields["model_answer"]
-    retrieved_ids     = result_fields["retrieved_ids"]
+    model_answer = result_fields["model_answer"]
+    retrieved_ids = result_fields["retrieved_ids"]
     retrieved_context = result_fields["retrieved_context"]
-    num_retrieved     = result_fields["num_retrieved"]
+    num_retrieved = result_fields["num_retrieved"]
 
     # Answer metrics
-    em  = _best_em(model_answer, golds) if golds else 0.0
-    f1  = _best_f1(model_answer, golds) if golds else 0.0
+    em = _best_em(model_answer, golds) if golds else 0.0
+    f1 = _best_f1(model_answer, golds) if golds else 0.0
 
     # Retrieval metrics
-    answer_in_ctx  = _answer_in_text(golds, retrieved_context) if golds else False
-    oracle_hit     = _answer_in_text(golds, " ".join(it.get("content","") for it in items_for_oracle)) if golds else False
-    ret_rank       = _retrieval_rank(golds, [{"content": it.content, "source_id": it.citation.source_id}
-                                              for it in (result_fields.get("_bundle_items") or [])])
+    answer_in_ctx = _answer_in_text(golds, retrieved_context) if golds else False
+    oracle_hit = (
+        _answer_in_text(golds, " ".join(it.get("content", "") for it in items_for_oracle))
+        if golds
+        else False
+    )
+    ret_rank = _retrieval_rank(
+        golds,
+        [
+            {"content": it.content, "source_id": it.citation.source_id}
+            for it in (result_fields.get("_bundle_items") or [])
+        ],
+    )
 
     # Use relevant_ids for MRR / Recall@k if available; else fall back to answer-in-doc
     if relevant_ids:
-        r1  = _recall_at(retrieved_ids, relevant_ids, 1)
-        r3  = _recall_at(retrieved_ids, relevant_ids, 3)
-        r5  = _recall_at(retrieved_ids, relevant_ids, 5)
+        r1 = _recall_at(retrieved_ids, relevant_ids, 1)
+        r3 = _recall_at(retrieved_ids, relevant_ids, 3)
+        r5 = _recall_at(retrieved_ids, relevant_ids, 5)
         r10 = _recall_at(retrieved_ids, relevant_ids, 10)
         mrr = _mrr_at(retrieved_ids, relevant_ids, 10)
     else:
@@ -328,60 +371,69 @@ def _build_row(
 
     # Failure classification
     if pipeline_error:
-        cat    = "Pipeline Error"
+        cat = "Pipeline Error"
         reason = pipeline_error[:200]
     else:
-        cat, reason = classify_failure(em, f1, model_answer, golds,
-                                        retrieved_context, num_retrieved, answer_in_ctx)
+        cat, reason = classify_failure(
+            em, f1, model_answer, golds, retrieved_context, num_retrieved, answer_in_ctx
+        )
 
     gold_str = " | ".join(golds[:3]) if golds else "N/A"
 
     return {
-        "benchmark_name":               f"{benchmark}" + (f" [{subset}]" if subset else ""),
-        "question":                     question,
-        "ground_truth_answer":          gold_str,
-        "model_answer":                 model_answer[:500],
-        "retrieved_context":            retrieved_context[:1200],
-        "top_k_document_ids":           ", ".join(retrieved_ids[:10]),
-        "answer_present_in_context":    answer_in_ctx,
-        "oracle_answer_in_input":       oracle_hit,
+        "benchmark_name": f"{benchmark}" + (f" [{subset}]" if subset else ""),
+        "question": question,
+        "ground_truth_answer": gold_str,
+        "model_answer": model_answer[:500],
+        "retrieved_context": retrieved_context[:1200],
+        "top_k_document_ids": ", ".join(retrieved_ids[:10]),
+        "answer_present_in_context": answer_in_ctx,
+        "oracle_answer_in_input": oracle_hit,
         "retrieval_rank_of_supporting_doc": ret_rank,
-        "exact_match":                  int(em),
-        "f1_score":                     round(f1, 4),
-        "faithfulness":                 round(result_fields.get("faithfulness", 0.0), 4),
-        "context_adherence":            round(result_fields.get("ctx_adherence", 0.0), 4),
-        "has_limitations":              result_fields.get("has_limitations", False),
-        "total_claims":                 result_fields.get("total_claims", 0),
-        "unsupported_claims":           result_fields.get("unsupported_claims", 0),
-        "num_retrieved_docs":           num_retrieved,
-        "recall_at_1":                  round(r1, 4),
-        "recall_at_3":                  round(r3, 4),
-        "recall_at_5":                  round(r5, 4),
-        "recall_at_10":                 round(r10, 4),
-        "mrr":                          round(mrr, 4),
-        "failure_category":             cat,
-        "evaluator_reason":             reason,
-        "pipeline_error":               pipeline_error[:200] if pipeline_error else "",
+        "exact_match": int(em),
+        "f1_score": round(f1, 4),
+        "faithfulness": round(result_fields.get("faithfulness", 0.0), 4),
+        "context_adherence": round(result_fields.get("ctx_adherence", 0.0), 4),
+        "has_limitations": result_fields.get("has_limitations", False),
+        "total_claims": result_fields.get("total_claims", 0),
+        "unsupported_claims": result_fields.get("unsupported_claims", 0),
+        "num_retrieved_docs": num_retrieved,
+        "recall_at_1": round(r1, 4),
+        "recall_at_3": round(r3, 4),
+        "recall_at_5": round(r5, 4),
+        "recall_at_10": round(r10, 4),
+        "mrr": round(mrr, 4),
+        "failure_category": cat,
+        "evaluator_reason": reason,
+        "pipeline_error": pipeline_error[:200] if pipeline_error else "",
     }
 
 
 # ── per-benchmark evaluators ───────────────────────────────────────────────────
 
+
 def eval_hotpotqa(examples: list[dict], max_n: int) -> list[dict[str, Any]]:
     rows = []
     for i, ex in enumerate(examples[:max_n]):
-        query    = ex["question"]
-        golds    = [ex["answer"]]
-        sf_ids   = set(ex["supporting_facts"]["title"])
-        context  = ex["context"]
+        query = ex["question"]
+        golds = [ex["answer"]]
+        sf_ids = set(ex["supporting_facts"]["title"])
+        context = ex["context"]
 
         items = []
-        for title, sents in zip(context["title"], context["sentences"]):
+        for title, sents in zip(context["title"], context["sentences"], strict=False):
             content = " ".join(sents).strip()
             if content:
-                items.append(_make_item(content, title, title,
-                                        f"https://en.wikipedia.org/wiki/{title.replace(' ','_')}",
-                                        "search", query))
+                items.append(
+                    _make_item(
+                        content,
+                        title,
+                        title,
+                        f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}",
+                        "search",
+                        query,
+                    )
+                )
 
         result, err = _run(query, items, f"hpqa-{i}", candidate_claims=golds)
         rf = _extract_result_fields(result, items)
@@ -392,57 +444,82 @@ def eval_hotpotqa(examples: list[dict], max_n: int) -> list[dict[str, Any]]:
 
         rows.append(_build_row("HotpotQA", query, golds, rf, sf_ids, items, err))
         if (i + 1) % 50 == 0:
-            print(f"     HotpotQA: {i+1}/{min(max_n, len(examples))}", flush=True)
+            print(f"     HotpotQA: {i + 1}/{min(max_n, len(examples))}", flush=True)
     return rows
 
 
 def eval_nq(examples: list[dict], max_n: int) -> list[dict[str, Any]]:
     rows = []
     for i, ex in enumerate(examples[:max_n]):
-        query   = ex["query"]
-        golds   = ex.get("short_answers", []) + [a.upper() for a in ex.get("yn_answers", [])]
+        query = ex["query"]
+        golds = ex.get("short_answers", []) + [a.upper() for a in ex.get("yn_answers", [])]
         passage = ex.get("passage", "")
-        title   = ex.get("title", f"nq-{i}")
+        title = ex.get("title", f"nq-{i}")
 
         if not passage.strip():
-            rows.append(_build_row("Natural Questions", query, golds,
-                                   _extract_result_fields(None, []), set(), [],
-                                   pipeline_error="No passage extracted"))
+            rows.append(
+                _build_row(
+                    "Natural Questions",
+                    query,
+                    golds,
+                    _extract_result_fields(None, []),
+                    set(),
+                    [],
+                    pipeline_error="No passage extracted",
+                )
+            )
             continue
 
-        items  = [_make_item(passage, title, title, ex.get("url",""), "search", query)]
-        result, err = _run(query, items, f"nq-{i}",
-                           candidate_claims=golds if golds else None)
+        items = [_make_item(passage, title, title, ex.get("url", ""), "search", query)]
+        result, err = _run(query, items, f"nq-{i}", candidate_claims=golds if golds else None)
         rf = _extract_result_fields(result, items)
         if result:
             rf["_bundle_items"] = list(result.bundle.items)
 
         rows.append(_build_row("Natural Questions", query, golds, rf, set(), items, err))
         if (i + 1) % 50 == 0:
-            print(f"     NQ: {i+1}/{min(max_n, len(examples))}", flush=True)
+            print(f"     NQ: {i + 1}/{min(max_n, len(examples))}", flush=True)
     return rows
 
 
 def eval_triviaqa(examples: list[dict], max_n: int) -> list[dict[str, Any]]:
     rows = []
     for i, ex in enumerate(examples[:max_n]):
-        query   = ex["question"]
-        golds   = ex.get("aliases", [])
+        query = ex["question"]
+        golds = ex.get("aliases", [])
         items_d = ex.get("items", [])
 
         if not golds or not items_d:
-            rows.append(_build_row("TriviaQA", query, golds,
-                                   _extract_result_fields(None, []), set(), [],
-                                   pipeline_error="Missing aliases or evidence passages"))
+            rows.append(
+                _build_row(
+                    "TriviaQA",
+                    query,
+                    golds,
+                    _extract_result_fields(None, []),
+                    set(),
+                    [],
+                    pipeline_error="Missing aliases or evidence passages",
+                )
+            )
             continue
 
-        items = [_make_item(it["content"], it["source_id"], it["title"], it["url"],
-                            "search", query)
-                 for it in items_d if it.get("content","").strip()]
+        items = [
+            _make_item(it["content"], it["source_id"], it["title"], it["url"], "search", query)
+            for it in items_d
+            if it.get("content", "").strip()
+        ]
         if not items:
-            rows.append(_build_row("TriviaQA", query, golds,
-                                   _extract_result_fields(None, []), set(), [],
-                                   pipeline_error="All passages empty"))
+            rows.append(
+                _build_row(
+                    "TriviaQA",
+                    query,
+                    golds,
+                    _extract_result_fields(None, []),
+                    set(),
+                    [],
+                    pipeline_error="All passages empty",
+                )
+            )
             continue
 
         result, err = _run(query, items, f"trivia-{i}", candidate_claims=[golds[0]])
@@ -452,7 +529,7 @@ def eval_triviaqa(examples: list[dict], max_n: int) -> list[dict[str, Any]]:
 
         rows.append(_build_row("TriviaQA", query, golds, rf, set(), items, err))
         if (i + 1) % 50 == 0:
-            print(f"     TriviaQA: {i+1}/{min(max_n, len(examples))}", flush=True)
+            print(f"     TriviaQA: {i + 1}/{min(max_n, len(examples))}", flush=True)
     return rows
 
 
@@ -461,13 +538,15 @@ def eval_ragbench(all_examples: dict[str, list[dict]], max_n: int) -> list[dict[
     for subset, examples in all_examples.items():
         for i, ex in enumerate(examples[:max_n]):
             query = ex.get("query", "")
-            docs  = ex.get("docs", [])
+            docs = ex.get("docs", [])
             if not query or not docs:
                 continue
 
-            items = [_make_item(d, f"ragbench-{subset}-{j}", f"Document {j+1}",
-                                "", "search", query)
-                     for j, d in enumerate(docs) if d.strip()]
+            items = [
+                _make_item(d, f"ragbench-{subset}-{j}", f"Document {j + 1}", "", "search", query)
+                for j, d in enumerate(docs)
+                if d.strip()
+            ]
             if not items:
                 continue
 
@@ -477,8 +556,7 @@ def eval_ragbench(all_examples: dict[str, list[dict]], max_n: int) -> list[dict[
                 rf["_bundle_items"] = list(result.bundle.items)
 
             # RAGBench has no gold answer — use claim support rate as surrogate
-            rows.append(_build_row("RAGBench", query, [], rf, set(), items, err,
-                                   subset=subset))
+            rows.append(_build_row("RAGBench", query, [], rf, set(), items, err, subset=subset))
         print(f"     RAGBench/{subset}: {min(max_n, len(examples))} done", flush=True)
     return rows
 
@@ -486,26 +564,51 @@ def eval_ragbench(all_examples: dict[str, list[dict]], max_n: int) -> list[dict[
 def eval_multihop(examples: list[dict], max_n: int) -> list[dict[str, Any]]:
     rows = []
     for i, ex in enumerate(examples[:max_n]):
-        query  = ex["query"]
-        gold   = ex.get("answer", "")
-        golds  = [gold] if gold else []
+        query = ex["query"]
+        gold = ex.get("answer", "")
+        golds = [gold] if gold else []
         ev_list = ex.get("evidence", [])
 
         if not ev_list:
-            rows.append(_build_row("MultiHop-RAG", query, golds,
-                                   _extract_result_fields(None, []), set(), [],
-                                   pipeline_error="No evidence items in example"))
+            rows.append(
+                _build_row(
+                    "MultiHop-RAG",
+                    query,
+                    golds,
+                    _extract_result_fields(None, []),
+                    set(),
+                    [],
+                    pipeline_error="No evidence items in example",
+                )
+            )
             continue
 
-        items = [_make_item(ev["content"], ev["source_id"], ev.get("title",""),
-                            ev.get("url",""), "search", query)
-                 for ev in ev_list if ev.get("content","").strip()]
+        items = [
+            _make_item(
+                ev["content"],
+                ev["source_id"],
+                ev.get("title", ""),
+                ev.get("url", ""),
+                "search",
+                query,
+            )
+            for ev in ev_list
+            if ev.get("content", "").strip()
+        ]
         gold_ids = set(ev["source_id"] for ev in ev_list)
 
         if not items:
-            rows.append(_build_row("MultiHop-RAG", query, golds,
-                                   _extract_result_fields(None, []), set(), [],
-                                   pipeline_error="All evidence items empty"))
+            rows.append(
+                _build_row(
+                    "MultiHop-RAG",
+                    query,
+                    golds,
+                    _extract_result_fields(None, []),
+                    set(),
+                    [],
+                    pipeline_error="All evidence items empty",
+                )
+            )
             continue
 
         result, err = _run(query, items, f"mhop-{i}", candidate_claims=golds if golds else None)
@@ -515,46 +618,48 @@ def eval_multihop(examples: list[dict], max_n: int) -> list[dict[str, Any]]:
 
         rows.append(_build_row("MultiHop-RAG", query, golds, rf, gold_ids, items, err))
         if (i + 1) % 50 == 0:
-            print(f"     MultiHop-RAG: {i+1}/{min(max_n, len(examples))}", flush=True)
+            print(f"     MultiHop-RAG: {i + 1}/{min(max_n, len(examples))}", flush=True)
     return rows
 
 
 # ── aggregate metrics ──────────────────────────────────────────────────────────
 
+
 def _benchmark_summary(rows: list[dict]) -> dict[str, Any]:
     """Compute aggregate metrics for a list of rows from one benchmark."""
-    em_vals   = [r["exact_match"]   for r in rows if r["ground_truth_answer"] != "N/A"]
-    f1_vals   = [r["f1_score"]      for r in rows if r["ground_truth_answer"] != "N/A"]
+    em_vals = [r["exact_match"] for r in rows if r["ground_truth_answer"] != "N/A"]
+    f1_vals = [r["f1_score"] for r in rows if r["ground_truth_answer"] != "N/A"]
     faith_vals = [r["faithfulness"] for r in rows]
-    adh_vals  = [r["context_adherence"] for r in rows]
-    r1_vals   = [r["recall_at_1"]   for r in rows]
-    r5_vals   = [r["recall_at_5"]   for r in rows]
-    r10_vals  = [r["recall_at_10"]  for r in rows]
-    mrr_vals  = [r["mrr"]           for r in rows]
+    adh_vals = [r["context_adherence"] for r in rows]
+    r1_vals = [r["recall_at_1"] for r in rows]
+    r5_vals = [r["recall_at_5"] for r in rows]
+    r10_vals = [r["recall_at_10"] for r in rows]
+    mrr_vals = [r["mrr"] for r in rows]
 
     _avg = lambda lst: sum(lst) / len(lst) if lst else 0.0  # noqa: E731
 
     return {
-        "total":             len(rows),
-        "pass_count":        sum(1 for r in rows if r["failure_category"] == "PASS"),
-        "em":                round(_avg(em_vals), 4),
-        "f1":                round(_avg(f1_vals), 4),
-        "faithfulness":      round(_avg(faith_vals), 4),
+        "total": len(rows),
+        "pass_count": sum(1 for r in rows if r["failure_category"] == "PASS"),
+        "em": round(_avg(em_vals), 4),
+        "f1": round(_avg(f1_vals), 4),
+        "faithfulness": round(_avg(faith_vals), 4),
         "context_adherence": round(_avg(adh_vals), 4),
-        "recall_at_1":       round(_avg(r1_vals), 4),
-        "recall_at_5":       round(_avg(r5_vals), 4),
-        "recall_at_10":      round(_avg(r10_vals), 4),
-        "mrr":               round(_avg(mrr_vals), 4),
-        "oracle_hit_rate":   round(_avg([float(r["oracle_answer_in_input"]) for r in rows]), 4),
-        "ctx_hit_rate":      round(_avg([float(r["answer_present_in_context"]) for r in rows]), 4),
+        "recall_at_1": round(_avg(r1_vals), 4),
+        "recall_at_5": round(_avg(r5_vals), 4),
+        "recall_at_10": round(_avg(r10_vals), 4),
+        "mrr": round(_avg(mrr_vals), 4),
+        "oracle_hit_rate": round(_avg([float(r["oracle_answer_in_input"]) for r in rows]), 4),
+        "ctx_hit_rate": round(_avg([float(r["answer_present_in_context"]) for r in rows]), 4),
     }
 
 
 # ── Excel helpers ──────────────────────────────────────────────────────────────
 
+
 def _cell(ws, r, c, v, bold=False, fill=None, align="center", wrap=False, fmt=None):
     cell = ws.cell(row=r, column=c, value=v)
-    cell.font      = Font(bold=bold, size=9)
+    cell.font = Font(bold=bold, size=9)
     cell.alignment = Alignment(horizontal=align, vertical="center", wrap_text=wrap)
     if fill:
         cell.fill = fill
@@ -566,8 +671,8 @@ def _cell(ws, r, c, v, bold=False, fill=None, align="center", wrap=False, fmt=No
 def _hdr_row(ws, r: int, labels: list[str], fill=BLUE, height: int = 22) -> None:
     for c, lbl in enumerate(labels, 1):
         cell = ws.cell(row=r, column=c, value=lbl)
-        cell.font      = HDR
-        cell.fill      = fill
+        cell.font = HDR
+        cell.fill = fill
         cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
     ws.row_dimensions[r].height = height
 
@@ -585,23 +690,59 @@ def _score_fill(v: float) -> PatternFill:
 # ── Sheet 1: All Results ───────────────────────────────────────────────────────
 
 ALL_RESULTS_COLS = [
-    "benchmark_name", "question", "ground_truth_answer", "model_answer",
-    "retrieved_context", "top_k_document_ids", "answer_present_in_context",
-    "oracle_answer_in_input", "retrieval_rank_of_supporting_doc",
-    "exact_match", "f1_score", "faithfulness", "context_adherence",
-    "has_limitations", "total_claims", "unsupported_claims", "num_retrieved_docs",
-    "recall_at_1", "recall_at_3", "recall_at_5", "recall_at_10", "mrr",
-    "failure_category", "evaluator_reason", "pipeline_error",
+    "benchmark_name",
+    "question",
+    "ground_truth_answer",
+    "model_answer",
+    "retrieved_context",
+    "top_k_document_ids",
+    "answer_present_in_context",
+    "oracle_answer_in_input",
+    "retrieval_rank_of_supporting_doc",
+    "exact_match",
+    "f1_score",
+    "faithfulness",
+    "context_adherence",
+    "has_limitations",
+    "total_claims",
+    "unsupported_claims",
+    "num_retrieved_docs",
+    "recall_at_1",
+    "recall_at_3",
+    "recall_at_5",
+    "recall_at_10",
+    "mrr",
+    "failure_category",
+    "evaluator_reason",
+    "pipeline_error",
 ]
 
 ALL_RESULTS_LABELS = [
-    "Benchmark", "Question", "Ground Truth Answer", "Model Answer",
-    "Retrieved Context (truncated)", "Top-K Document IDs", "Answer in Context?",
-    "Oracle Hit?", "Rank of Supporting Doc",
-    "Exact Match", "F1 Score", "Faithfulness", "Context Adherence",
-    "Has Limitations", "Total Claims", "Unsupported Claims", "# Retrieved Docs",
-    "Recall@1", "Recall@3", "Recall@5", "Recall@10", "MRR",
-    "Failure Category", "Evaluator Reason", "Pipeline Error",
+    "Benchmark",
+    "Question",
+    "Ground Truth Answer",
+    "Model Answer",
+    "Retrieved Context (truncated)",
+    "Top-K Document IDs",
+    "Answer in Context?",
+    "Oracle Hit?",
+    "Rank of Supporting Doc",
+    "Exact Match",
+    "F1 Score",
+    "Faithfulness",
+    "Context Adherence",
+    "Has Limitations",
+    "Total Claims",
+    "Unsupported Claims",
+    "# Retrieved Docs",
+    "Recall@1",
+    "Recall@3",
+    "Recall@5",
+    "Recall@10",
+    "MRR",
+    "Failure Category",
+    "Evaluator Reason",
+    "Pipeline Error",
 ]
 
 
@@ -613,9 +754,9 @@ def build_all_results(wb: openpyxl.Workbook, rows: list[dict]) -> None:
 
     for row_i, r in enumerate(rows, 2):
         for col_i, key in enumerate(ALL_RESULTS_COLS, 1):
-            val  = r.get(key, "")
+            val = r.get(key, "")
             cell = ws.cell(row=row_i, column=col_i, value=val)
-            cell.font      = Font(size=9)
+            cell.font = Font(size=9)
             cell.alignment = Alignment(horizontal="left", vertical="top", wrap_text=True)
 
         # Colour the failure_category column (col 23)
@@ -633,29 +774,67 @@ def build_all_results(wb: openpyxl.Workbook, rows: list[dict]) -> None:
         ws.row_dimensions[row_i].height = 40
 
     # Column widths
-    widths = {1:18, 2:40, 3:30, 4:35, 5:55, 6:30, 7:12, 8:10, 9:10,
-              10:8, 11:8, 12:10, 13:12, 14:10, 15:9, 16:11, 17:10,
-              18:9, 19:9, 20:9, 21:10, 22:8, 23:20, 24:50, 25:30}
+    widths = {
+        1: 18,
+        2: 40,
+        3: 30,
+        4: 35,
+        5: 55,
+        6: 30,
+        7: 12,
+        8: 10,
+        9: 10,
+        10: 8,
+        11: 8,
+        12: 10,
+        13: 12,
+        14: 10,
+        15: 9,
+        16: 11,
+        17: 10,
+        18: 9,
+        19: 9,
+        20: 9,
+        21: 10,
+        22: 8,
+        23: 20,
+        24: 50,
+        25: 30,
+    }
     for c, w in widths.items():
         ws.column_dimensions[get_column_letter(c)].width = w
 
 
 # ── Sheet 2: Benchmark Metrics ─────────────────────────────────────────────────
 
-def build_benchmark_metrics(wb: openpyxl.Workbook, rows: list[dict], run_ts: datetime, elapsed: float) -> None:
+
+def build_benchmark_metrics(
+    wb: openpyxl.Workbook, rows: list[dict], run_ts: datetime, elapsed: float
+) -> None:
     ws = wb.create_sheet("Benchmark Metrics")
     ws.sheet_view.showGridLines = False
 
     ws.merge_cells("A1:L1")
     c = ws["A1"]
     c.value = f"APEX-RAG v4 — Benchmark Evaluation  |  {run_ts.strftime('%Y-%m-%d %H:%M')}  |  {elapsed:.1f}s"
-    c.font  = Font(bold=True, size=14, color="1F3864")
+    c.font = Font(bold=True, size=14, color="1F3864")
     c.alignment = Alignment(horizontal="center", vertical="center")
     ws.row_dimensions[1].height = 30
 
-    labels = ["Benchmark", "Total", "Pass", "Pass %",
-              "EM", "F1", "Faithfulness", "Context Adherence",
-              "Recall@1", "Recall@5", "Recall@10", "MRR"]
+    labels = [
+        "Benchmark",
+        "Total",
+        "Pass",
+        "Pass %",
+        "EM",
+        "F1",
+        "Faithfulness",
+        "Context Adherence",
+        "Recall@1",
+        "Recall@5",
+        "Recall@10",
+        "MRR",
+    ]
     _hdr_row(ws, 3, labels, fill=BLUE)
 
     # Group rows by benchmark
@@ -668,13 +847,30 @@ def build_benchmark_metrics(wb: openpyxl.Workbook, rows: list[dict], run_ts: dat
         s = _benchmark_summary(bm_rows)
         pass_pct = s["pass_count"] / s["total"] * 100 if s["total"] else 0
 
-        vals = [bm, s["total"], s["pass_count"], round(pass_pct, 1),
-                s["em"], s["f1"], s["faithfulness"], s["context_adherence"],
-                s["recall_at_1"], s["recall_at_5"], s["recall_at_10"], s["mrr"]]
+        vals = [
+            bm,
+            s["total"],
+            s["pass_count"],
+            round(pass_pct, 1),
+            s["em"],
+            s["f1"],
+            s["faithfulness"],
+            s["context_adherence"],
+            s["recall_at_1"],
+            s["recall_at_5"],
+            s["recall_at_10"],
+            s["mrr"],
+        ]
 
         for ci, v in enumerate(vals, 1):
-            cell = _cell(ws, row_i, ci, v, align="center" if ci > 1 else "left",
-                         fill=LGREY if row_i % 2 == 0 else WHITE)
+            cell = _cell(
+                ws,
+                row_i,
+                ci,
+                v,
+                align="center" if ci > 1 else "left",
+                fill=LGREY if row_i % 2 == 0 else WHITE,
+            )
             if isinstance(v, float):
                 cell.number_format = "0.000"
             if ci == 4:
@@ -690,13 +886,14 @@ def build_benchmark_metrics(wb: openpyxl.Workbook, rows: list[dict], run_ts: dat
 
 # ── Sheet 3: Failure Analysis ──────────────────────────────────────────────────
 
+
 def build_failure_analysis(wb: openpyxl.Workbook, rows: list[dict]) -> None:
     ws = wb.create_sheet("Failure Analysis")
     ws.sheet_view.showGridLines = False
 
     ws.merge_cells("A1:F1")
     ws["A1"].value = "Failure Analysis — Root Cause Classification"
-    ws["A1"].font  = Font(bold=True, size=14, color="1F3864")
+    ws["A1"].font = Font(bold=True, size=14, color="1F3864")
     ws["A1"].alignment = Alignment(horizontal="center", vertical="center")
     ws.row_dimensions[1].height = 28
 
@@ -707,14 +904,26 @@ def build_failure_analysis(wb: openpyxl.Workbook, rows: list[dict]) -> None:
     # Count by category
     cat_counts: Counter = Counter(r["failure_category"] for r in rows)
 
-    _hdr_row(ws, 3, ["Failure Category", "Count", "% of Failures", "% of Total", "Example Question", "Example Reason"], fill=RED)
+    _hdr_row(
+        ws,
+        3,
+        [
+            "Failure Category",
+            "Count",
+            "% of Failures",
+            "% of Total",
+            "Example Question",
+            "Example Reason",
+        ],
+        fill=RED,
+    )
 
     # Sort by count desc, PASS last
     ordered = sorted(cat_counts.items(), key=lambda x: (-x[1], x[0] == "PASS"))
 
     row_i = 4
     for cat, count in ordered:
-        pct_fail  = count / total_failures * 100 if total_failures else 0
+        pct_fail = count / total_failures * 100 if total_failures else 0
         pct_total = count / total_examples * 100 if total_examples else 0
 
         # Pick one example for this category
@@ -723,9 +932,9 @@ def build_failure_analysis(wb: openpyxl.Workbook, rows: list[dict]) -> None:
         sample_r = examples_in_cat[0]["evaluator_reason"][:150] if examples_in_cat else ""
 
         fill = FAILURE_COLOURS.get(cat, GREY)
-        _cell(ws, row_i, 1, cat,   bold=True, fill=fill, align="left")
+        _cell(ws, row_i, 1, cat, bold=True, fill=fill, align="left")
         _cell(ws, row_i, 2, count, fill=fill, align="center")
-        _cell(ws, row_i, 3, round(pct_fail, 1),  fill=fill, align="center", fmt="0.0")
+        _cell(ws, row_i, 3, round(pct_fail, 1), fill=fill, align="center", fmt="0.0")
         _cell(ws, row_i, 4, round(pct_total, 1), fill=fill, align="center", fmt="0.0")
         _cell(ws, row_i, 5, sample_q, fill=LGREY, align="left", wrap=True)
         _cell(ws, row_i, 6, sample_r, fill=LGREY, align="left", wrap=True)
@@ -743,14 +952,19 @@ def build_failure_analysis(wb: openpyxl.Workbook, rows: list[dict]) -> None:
     # Per-category example table
     _cell(ws, row_i, 1, "Detailed Examples by Category", bold=True, fill=NAVY, align="left")
     row_i += 1
-    _hdr_row(ws, row_i, ["Category", "Benchmark", "Question", "Gold Answer", "Model Answer", "Reason"], fill=BLUE)
+    _hdr_row(
+        ws,
+        row_i,
+        ["Category", "Benchmark", "Question", "Gold Answer", "Model Answer", "Reason"],
+        fill=BLUE,
+    )
     row_i += 1
 
     shown: Counter = Counter()
     for r in rows:
         cat = r["failure_category"]
         if shown[cat] < 3:
-            _cell(ws, row_i, 1, cat,  fill=FAILURE_COLOURS.get(cat, GREY), bold=True, align="left")
+            _cell(ws, row_i, 1, cat, fill=FAILURE_COLOURS.get(cat, GREY), bold=True, align="left")
             _cell(ws, row_i, 2, r["benchmark_name"][:20], fill=LGREY, align="left")
             _cell(ws, row_i, 3, r["question"][:120], fill=LGREY, align="left", wrap=True)
             _cell(ws, row_i, 4, r["ground_truth_answer"][:80], fill=LGREY, align="left", wrap=True)
@@ -770,13 +984,14 @@ def build_failure_analysis(wb: openpyxl.Workbook, rows: list[dict]) -> None:
 
 # ── Sheet 4: Retrieval Diagnostics ─────────────────────────────────────────────
 
+
 def build_retrieval_diagnostics(wb: openpyxl.Workbook, rows: list[dict]) -> None:
     ws = wb.create_sheet("Retrieval Diagnostics")
     ws.sheet_view.showGridLines = False
 
     ws.merge_cells("A1:D1")
     ws["A1"].value = "Retrieval Diagnostics — Root-Cause Retrieval Analysis"
-    ws["A1"].font  = Font(bold=True, size=13, color="1F3864")
+    ws["A1"].font = Font(bold=True, size=13, color="1F3864")
     ws["A1"].alignment = Alignment(horizontal="center", vertical="center")
     ws.row_dimensions[1].height = 26
 
@@ -788,21 +1003,22 @@ def build_retrieval_diagnostics(wb: openpyxl.Workbook, rows: list[dict]) -> None
         return round(sum(1 for r in rows if condition_fn(r)) / total * 100, 2) if total else 0.0
 
     metrics = [
-        ("Recall@1  (supporting doc ranked #1)",           _avg([r["recall_at_1"]  for r in rows])),
-        ("Recall@3  (supporting doc in top 3)",            _avg([r["recall_at_3"]  for r in rows])),
-        ("Recall@5  (supporting doc in top 5)",            _avg([r["recall_at_5"]  for r in rows])),
-        ("Recall@10 (supporting doc in top 10)",           _avg([r["recall_at_10"] for r in rows])),
-        ("MRR (Mean Reciprocal Rank)",                     _avg([r["mrr"]          for r in rows])),
-        ("Oracle Answer Recall (answer in ANY input doc)",
-            _pct(lambda r: r["oracle_answer_in_input"])),
-        ("Context Hit Rate (answer in retrieved context)",
-            _pct(lambda r: r["answer_present_in_context"])),
-        ("Retrieval Failure Rate",
-            _pct(lambda r: r["failure_category"] == "Retrieval Failure")),
-        ("Context Truncation Rate",
-            _pct(lambda r: r["failure_category"] == "Context Truncation")),
-        ("Avg # Retrieved Documents",
-            _avg([r["num_retrieved_docs"] for r in rows])),
+        ("Recall@1  (supporting doc ranked #1)", _avg([r["recall_at_1"] for r in rows])),
+        ("Recall@3  (supporting doc in top 3)", _avg([r["recall_at_3"] for r in rows])),
+        ("Recall@5  (supporting doc in top 5)", _avg([r["recall_at_5"] for r in rows])),
+        ("Recall@10 (supporting doc in top 10)", _avg([r["recall_at_10"] for r in rows])),
+        ("MRR (Mean Reciprocal Rank)", _avg([r["mrr"] for r in rows])),
+        (
+            "Oracle Answer Recall (answer in ANY input doc)",
+            _pct(lambda r: r["oracle_answer_in_input"]),
+        ),
+        (
+            "Context Hit Rate (answer in retrieved context)",
+            _pct(lambda r: r["answer_present_in_context"]),
+        ),
+        ("Retrieval Failure Rate", _pct(lambda r: r["failure_category"] == "Retrieval Failure")),
+        ("Context Truncation Rate", _pct(lambda r: r["failure_category"] == "Context Truncation")),
+        ("Avg # Retrieved Documents", _avg([r["num_retrieved_docs"] for r in rows])),
     ]
 
     _hdr_row(ws, 3, ["Metric", "Value", "Notes"])
@@ -819,12 +1035,13 @@ def build_retrieval_diagnostics(wb: openpyxl.Workbook, rows: list[dict]) -> None
         "Average number of docs returned by pipeline per query",
     ]
 
-    for i, ((label, val), note) in enumerate(zip(metrics, notes), 4):
+    for i, ((label, val), note) in enumerate(zip(metrics, notes, strict=False), 4):
         _cell(ws, i, 1, label, bold=True, align="left", fill=LGREY)
         is_pct = "%" in label or "Rate" in label
-        fmt    = "0.00" if is_pct else "0.0000"
-        c = _cell(ws, i, 2, val, fill=_score_fill(val / 100 if is_pct else val),
-                  align="center", fmt=fmt)
+        fmt = "0.00" if is_pct else "0.0000"
+        c = _cell(
+            ws, i, 2, val, fill=_score_fill(val / 100 if is_pct else val), align="center", fmt=fmt
+        )
         _cell(ws, i, 3, note, align="left", fill=WHITE)
         ws.row_dimensions[i].height = 18
 
@@ -832,8 +1049,20 @@ def build_retrieval_diagnostics(wb: openpyxl.Workbook, rows: list[dict]) -> None
     r_start = 4 + len(metrics) + 2
     ws.cell(row=r_start, column=1, value="Per-Benchmark Retrieval Breakdown").font = BOLD
     r_start += 1
-    _hdr_row(ws, r_start, ["Benchmark", "Recall@1", "Recall@5", "Recall@10",
-                             "MRR", "Oracle Hit%", "Context Hit%", "Ret.Failure%"])
+    _hdr_row(
+        ws,
+        r_start,
+        [
+            "Benchmark",
+            "Recall@1",
+            "Recall@5",
+            "Recall@10",
+            "MRR",
+            "Oracle Hit%",
+            "Context Hit%",
+            "Ret.Failure%",
+        ],
+    )
     r_start += 1
 
     by_bm: dict[str, list[dict]] = defaultdict(list)
@@ -841,18 +1070,28 @@ def build_retrieval_diagnostics(wb: openpyxl.Workbook, rows: list[dict]) -> None
         by_bm[r["benchmark_name"]].append(r)
 
     for bm, bm_rows in sorted(by_bm.items()):
-        r1   = _avg([r["recall_at_1"]  for r in bm_rows])
-        r5   = _avg([r["recall_at_5"]  for r in bm_rows])
-        r10  = _avg([r["recall_at_10"] for r in bm_rows])
-        mrr  = _avg([r["mrr"]          for r in bm_rows])
-        oracle = round(sum(1 for r in bm_rows if r["oracle_answer_in_input"]) / len(bm_rows) * 100, 1)
-        ctx_hit = round(sum(1 for r in bm_rows if r["answer_present_in_context"]) / len(bm_rows) * 100, 1)
-        ret_fail = round(sum(1 for r in bm_rows if r["failure_category"] == "Retrieval Failure") / len(bm_rows) * 100, 1)
+        r1 = _avg([r["recall_at_1"] for r in bm_rows])
+        r5 = _avg([r["recall_at_5"] for r in bm_rows])
+        r10 = _avg([r["recall_at_10"] for r in bm_rows])
+        mrr = _avg([r["mrr"] for r in bm_rows])
+        oracle = round(
+            sum(1 for r in bm_rows if r["oracle_answer_in_input"]) / len(bm_rows) * 100, 1
+        )
+        ctx_hit = round(
+            sum(1 for r in bm_rows if r["answer_present_in_context"]) / len(bm_rows) * 100, 1
+        )
+        ret_fail = round(
+            sum(1 for r in bm_rows if r["failure_category"] == "Retrieval Failure")
+            / len(bm_rows)
+            * 100,
+            1,
+        )
 
         _cell(ws, r_start, 1, bm, bold=True, align="left", fill=LGREY)
         for ci, v in enumerate([r1, r5, r10, mrr, oracle, ctx_hit, ret_fail], 2):
-            c = _cell(ws, r_start, ci, v, align="center",
-                      fill=_score_fill(v / 100 if ci >= 6 else v))
+            c = _cell(
+                ws, r_start, ci, v, align="center", fill=_score_fill(v / 100 if ci >= 6 else v)
+            )
             c.number_format = "0.000" if ci <= 5 else "0.0"
         ws.row_dimensions[r_start].height = 18
         r_start += 1
@@ -864,58 +1103,72 @@ def build_retrieval_diagnostics(wb: openpyxl.Workbook, rows: list[dict]) -> None
 
 # ── Sheet 5: Generation Diagnostics ───────────────────────────────────────────
 
+
 def build_generation_diagnostics(wb: openpyxl.Workbook, rows: list[dict]) -> None:
     ws = wb.create_sheet("Generation Diagnostics")
     ws.sheet_view.showGridLines = False
 
     ws.merge_cells("A1:G1")
     ws["A1"].value = "Generation Diagnostics — Failures where Retrieval Succeeded"
-    ws["A1"].font  = Font(bold=True, size=13, color="1F3864")
+    ws["A1"].font = Font(bold=True, size=13, color="1F3864")
     ws["A1"].alignment = Alignment(horizontal="center", vertical="center")
     ws.row_dimensions[1].height = 26
 
     # Three failure categories related to generation
     gen_cats = {
         "Answer in Context but Wrong": [
-            r for r in rows
+            r
+            for r in rows
             if r["answer_present_in_context"]
-            and r["failure_category"] not in ("PASS", "Pipeline Error", "Retrieval Failure",
-                                               "Context Truncation", "Evaluation Mismatch")
+            and r["failure_category"]
+            not in (
+                "PASS",
+                "Pipeline Error",
+                "Retrieval Failure",
+                "Context Truncation",
+                "Evaluation Mismatch",
+            )
         ],
         "Model Refused or Expressed Uncertainty": [
-            r for r in rows
-            if r.get("has_limitations") and r["failure_category"] != "PASS"
+            r for r in rows if r.get("has_limitations") and r["failure_category"] != "PASS"
         ],
         "Verbose Answer (Failed to Extract Span)": [
-            r for r in rows
+            r
+            for r in rows
             if r["failure_category"] == "Answer Extraction Failure"
             and len(r["model_answer"].split()) > 10
         ],
-        "Hallucination": [
-            r for r in rows if r["failure_category"] == "Hallucination"
-        ],
-        "Reasoning Failure": [
-            r for r in rows if r["failure_category"] == "Reasoning Failure"
-        ],
+        "Hallucination": [r for r in rows if r["failure_category"] == "Hallucination"],
+        "Reasoning Failure": [r for r in rows if r["failure_category"] == "Reasoning Failure"],
     }
 
-    col_labels = ["Benchmark", "Question", "Gold Answer", "Model Answer",
-                  "Context Snippet", "F1", "Reason"]
+    col_labels = [
+        "Benchmark",
+        "Question",
+        "Gold Answer",
+        "Model Answer",
+        "Context Snippet",
+        "F1",
+        "Reason",
+    ]
     r_i = 3
     for section, section_rows in gen_cats.items():
-        fill = FAILURE_COLOURS.get(section.split("(")[0].strip(),
-                                   FAILURE_COLOURS.get(section, ORANGE))
+        fill = FAILURE_COLOURS.get(
+            section.split("(")[0].strip(), FAILURE_COLOURS.get(section, ORANGE)
+        )
         ws.merge_cells(f"A{r_i}:G{r_i}")
         c = ws[f"A{r_i}"]
         c.value = f"{section}  ({len(section_rows)} examples)"
-        c.font  = Font(bold=True, size=11, color="FFFFFF")
-        c.fill  = fill
+        c.font = Font(bold=True, size=11, color="FFFFFF")
+        c.fill = fill
         c.alignment = Alignment(horizontal="left", vertical="center", indent=1)
         ws.row_dimensions[r_i].height = 22
         r_i += 1
 
         if not section_rows:
-            ws.cell(row=r_i, column=1, value="No examples in this category.").font = Font(italic=True, size=9)
+            ws.cell(row=r_i, column=1, value="No examples in this category.").font = Font(
+                italic=True, size=9
+            )
             r_i += 2
             continue
 
@@ -924,10 +1177,10 @@ def build_generation_diagnostics(wb: openpyxl.Workbook, rows: list[dict]) -> Non
         for ex in section_rows[:20]:
             ctx_snip = ex["retrieved_context"][:200].replace("\n", " ")
             _cell(ws, r_i, 1, ex["benchmark_name"][:20], align="left")
-            _cell(ws, r_i, 2, ex["question"][:100],    align="left", wrap=True)
+            _cell(ws, r_i, 2, ex["question"][:100], align="left", wrap=True)
             _cell(ws, r_i, 3, ex["ground_truth_answer"][:60], align="left", wrap=True)
             _cell(ws, r_i, 4, ex["model_answer"][:120], align="left", wrap=True)
-            _cell(ws, r_i, 5, ctx_snip,                align="left", wrap=True)
+            _cell(ws, r_i, 5, ctx_snip, align="left", wrap=True)
             c = _cell(ws, r_i, 6, ex["f1_score"], align="center", fill=_score_fill(ex["f1_score"]))
             c.number_format = "0.000"
             _cell(ws, r_i, 7, ex["evaluator_reason"][:150], align="left", wrap=True)
@@ -946,6 +1199,7 @@ def build_generation_diagnostics(wb: openpyxl.Workbook, rows: list[dict]) -> Non
 
 # ── Sheet 6: Manual Review ────────────────────────────────────────────────────
 
+
 def build_manual_review(wb: openpyxl.Workbook, rows: list[dict], seed: int = 42) -> None:
     ws = wb.create_sheet("Manual Review")
     ws.sheet_view.showGridLines = False
@@ -955,20 +1209,29 @@ def build_manual_review(wb: openpyxl.Workbook, rows: list[dict], seed: int = 42)
     sample = rng.sample(failures, min(100, len(failures)))
 
     ws.merge_cells("A1:H1")
-    ws["A1"].value = (f"Manual Review Sample — {len(sample)} randomly sampled failures "
-                      f"(seed={seed})")
-    ws["A1"].font  = Font(bold=True, size=13, color="1F3864")
+    ws["A1"].value = f"Manual Review Sample — {len(sample)} randomly sampled failures (seed={seed})"
+    ws["A1"].font = Font(bold=True, size=13, color="1F3864")
     ws["A1"].alignment = Alignment(horizontal="center", vertical="center")
     ws.row_dimensions[1].height = 26
 
     ws.merge_cells("A2:H2")
-    ws["A2"].value = ("Instructions: Review each row. Add your annotations in the 'Human Label' "
-                      "column. Correct the Failure Category if the automated classifier is wrong.")
-    ws["A2"].font  = Font(italic=True, size=9, color="595959")
+    ws["A2"].value = (
+        "Instructions: Review each row. Add your annotations in the 'Human Label' "
+        "column. Correct the Failure Category if the automated classifier is wrong."
+    )
+    ws["A2"].font = Font(italic=True, size=9, color="595959")
     ws["A2"].alignment = Alignment(horizontal="left", vertical="center")
 
-    labels = ["#", "Benchmark", "Question", "Gold Answer", "Model Answer",
-              "Failure Category (Auto)", "Evaluator Reason", "Human Label / Notes"]
+    labels = [
+        "#",
+        "Benchmark",
+        "Question",
+        "Gold Answer",
+        "Model Answer",
+        "Failure Category (Auto)",
+        "Evaluator Reason",
+        "Human Label / Notes",
+    ]
     _hdr_row(ws, 4, labels, fill=PURPLE)
 
     for i, r in enumerate(sample, 1):
@@ -1008,7 +1271,9 @@ def main() -> None:
     parser.add_argument("--benchmark", choices=[*BENCHMARKS, "all"], default="all")
     parser.add_argument("--max-examples", type=int, default=200, dest="max_examples")
     parser.add_argument("--out", default="eval_diagnostics.xlsx")
-    parser.add_argument("--seed", type=int, default=42, help="Random seed for Manual Review sampling")
+    parser.add_argument(
+        "--seed", type=int, default=42, help="Random seed for Manual Review sampling"
+    )
     args = parser.parse_args()
 
     N = args.max_examples
@@ -1093,24 +1358,24 @@ def main() -> None:
 
     # ── final summary ────────────────────────────────────────────────────────
     total = len(all_rows)
-    pass_ct  = sum(1 for r in all_rows if r["failure_category"] == "PASS")
-    fail_ct  = total - pass_ct
-    cat_cts  = Counter(r["failure_category"] for r in all_rows if r["failure_category"] != "PASS")
+    pass_ct = sum(1 for r in all_rows if r["failure_category"] == "PASS")
+    fail_ct = total - pass_ct
+    cat_cts = Counter(r["failure_category"] for r in all_rows if r["failure_category"] != "PASS")
 
-    print(f"\n{'='*60}")
-    print(f"  APEX-RAG Evaluation Complete")
-    print(f"{'='*60}")
+    print(f"\n{'=' * 60}")
+    print("  APEX-RAG Evaluation Complete")
+    print(f"{'=' * 60}")
     print(f"  Total examples  : {total}")
-    print(f"  PASS            : {pass_ct}  ({pass_ct/total*100:.1f}%)")
-    print(f"  Failures        : {fail_ct}  ({fail_ct/total*100:.1f}%)")
-    print(f"\n  Failure breakdown:")
+    print(f"  PASS            : {pass_ct}  ({pass_ct / total * 100:.1f}%)")
+    print(f"  Failures        : {fail_ct}  ({fail_ct / total * 100:.1f}%)")
+    print("\n  Failure breakdown:")
     for cat, cnt in cat_cts.most_common():
-        print(f"    {cat:<35} {cnt:>5}  ({cnt/total*100:.1f}%)")
+        print(f"    {cat:<35} {cnt:>5}  ({cnt / total * 100:.1f}%)")
     print(f"\n  Total elapsed   : {time.perf_counter() - t0:.1f}s")
     print(f"  Output          : {out.resolve()}")
-    print(f"  Sheets          : All Results | Benchmark Metrics | Failure Analysis |")
-    print(f"                    Retrieval Diagnostics | Generation Diagnostics | Manual Review")
-    print(f"{'='*60}\n")
+    print("  Sheets          : All Results | Benchmark Metrics | Failure Analysis |")
+    print("                    Retrieval Diagnostics | Generation Diagnostics | Manual Review")
+    print(f"{'=' * 60}\n")
 
 
 if __name__ == "__main__":

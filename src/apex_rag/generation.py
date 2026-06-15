@@ -102,7 +102,9 @@ def approve_claims(
             if item.conflict_status == ConflictStatus.NONE
             and (
                 claim_lower in item.content.lower()
-                or any(word in item.content.lower() for word in claim_lower.split() if len(word) > 2)
+                or any(
+                    word in item.content.lower() for word in claim_lower.split() if len(word) > 2
+                )
             )
         ]
 
