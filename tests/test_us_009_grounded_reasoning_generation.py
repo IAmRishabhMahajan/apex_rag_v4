@@ -11,6 +11,7 @@ class TestUS009GroundedReasoningGeneration(unittest.TestCase):
     """Keep final generation constrained by approved evidence."""
 
     def test_story_contract(self) -> None:
+        """Verify US-009 story file has required sections, terms, and minimum bullet counts."""
         expectation = StoryExpectation(
             story_id="US-009",
             slug="grounded-reasoning-generation",

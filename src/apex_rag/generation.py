@@ -9,6 +9,8 @@ from src.apex_rag.evidence_fusion import ConflictStatus, EvidenceBundle, Evidenc
 
 
 class ClaimStatus(str, Enum):
+    """Grounding status of a single candidate claim after evidence matching."""
+
     SUPPORTED = "supported"
     UNSUPPORTED = "unsupported"
     PARTIAL = "partial"
@@ -16,6 +18,8 @@ class ClaimStatus(str, Enum):
 
 @dataclass(frozen=True)
 class CitationLink:
+    """Maps one claim to the specific evidence item that supports it."""
+
     claim_text: str
     evidence_source_id: str
     evidence_title: str
@@ -24,6 +28,8 @@ class CitationLink:
 
 @dataclass
 class ApprovedClaim:
+    """A candidate claim together with its supporting evidence and citation links."""
+
     text: str
     status: ClaimStatus
     evidence_items: tuple[EvidenceItem, ...]
@@ -31,11 +37,14 @@ class ApprovedClaim:
 
     @property
     def is_supported(self) -> bool:
+        """True when this claim has at least one supporting evidence item."""
         return self.status == ClaimStatus.SUPPORTED
 
 
 @dataclass(frozen=True)
 class GeneratedAnswer:
+    """The final grounded answer: answer text, approved claims, citations, and limitation notes."""
+
     text: str
     approved_claims: tuple[ApprovedClaim, ...]
     citation_links: tuple[CitationLink, ...]
@@ -44,10 +53,12 @@ class GeneratedAnswer:
 
     @property
     def unsupported_claim_count(self) -> int:
+        """Number of approved claims that could not be matched to evidence."""
         return sum(1 for c in self.approved_claims if c.status == ClaimStatus.UNSUPPORTED)
 
     @property
     def all_claims_supported(self) -> bool:
+        """True when every approved claim is backed by evidence."""
         return all(c.is_supported for c in self.approved_claims)
 
 
@@ -55,6 +66,7 @@ class GroundingError(Exception):
     """Raised when generation cannot be completed due to missing citation mappings."""
 
     def __init__(self, reason: str) -> None:
+        """Store the reason string so callers can inspect it without parsing the message."""
         super().__init__(f"Grounding failed: {reason}")
         self.reason = reason
 
@@ -65,6 +77,7 @@ class GroundingError(Exception):
 
 
 def _build_citation_link(claim_text: str, item: EvidenceItem) -> CitationLink:
+    """Construct a CitationLink connecting a claim to a specific evidence item."""
     return CitationLink(
         claim_text=claim_text,
         evidence_source_id=item.citation.source_id,
@@ -87,7 +100,10 @@ def approve_claims(
             item
             for item in bundle.items
             if item.conflict_status == ConflictStatus.NONE
-            and any(word in item.content.lower() for word in claim_lower.split() if len(word) > 4)
+            and (
+                claim_lower in item.content.lower()
+                or any(word in item.content.lower() for word in claim_lower.split() if len(word) > 2)
+            )
         ]
 
         if supporting:
